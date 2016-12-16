@@ -1,0 +1,555 @@
+package com.lx.service.app;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Random;
+
+import javax.annotation.Resource;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+//import com.bm.webs.controller.util.SMSHelper;
+import com.lx.dao.DaoSupport;
+import com.lx.util.HString;
+import com.lx.util.PageData;
+import com.lx.util.XConst;
+import com.lx.util.config.ConfigLoad;
+import com.lx.util.emaysms.SMSHelper;
+import com.lx.util.mail.SimpleMailSender;
+
+@Service
+@Transactional
+@SuppressWarnings("unchecked")
+public class OrderFormService {
+	
+	@Resource
+	private DaoSupport dao;
+	
+	@Autowired
+	private AdditionalChargesService addChargesService;
+	
+	
+	@Autowired
+	private CarManagerService carManagerService;
+	
+	private static SimpleDateFormat DATE_H_M_CN_FORMAT = new SimpleDateFormat("yyyy年MM月dd日HH点mm分");
+	//private static SimpleDateFormat DATE_SIMPLE_CN_FORMAT = new SimpleDateFormat("yyyy年MM月dd日");
+	
+	/**
+	 * 保存订单信息
+	 * 
+	 * @param param
+	 * @throws Exception
+	 */
+	public PageData saveOrder(PageData param) throws Exception {
+		
+		PageData res = new PageData();
+		
+		//一、生成订单号
+		
+		Date time = new Date();
+		Integer count = (Integer) dao.findForObject("OrderFormMapper.getOrderNum", new PageData());
+		String orderCode = new SimpleDateFormat("yyyyMMddHHmmss")
+				.format(time)
+				+ count.toString()//param.get("userId")
+				+ String.format("%03d", new Random().nextInt(1000));
+		param.put("orderCode", orderCode);// 订单编号
+		param.put("orderType", "default");//订单类型
+		param.put("payType", "alipay");//支付方式（默认）
+		
+		//二、计算价格
+		Long defRouteId = param.getLong("defRouteId");
+		String acOther = param.getString("acOther");
+		String addChargesIds = param.getString("addChargesIds");
+		Double totalPrice = 0.00;
+		if(XConst.ROUTE_TYPE.DEFAULT.toString().equals(param.getString(XConst.RT)) &&
+				defRouteId != null && 
+				acOther==null && 
+				addChargesIds!=null){//常规路线 与  附加体验是"非自定义" 才计算价格
+			
+			List<PageData> carList = carManagerService.getCarByIds(param);
+			Integer totalKm = (Integer) dao.findForObject("DefaultRouteManagerMapper.getTotalKmById", param.getLong("defRouteId"));
+				
+			//加上附加公里数
+			List<PageData> addChargesList = addChargesService.getAdditionalChargesByIds(param);
+			if(addChargesList != null){
+				for(PageData addCharge : addChargesList){
+					totalKm += addCharge.getInt("price");
+				}
+			}
+			for(PageData car : carList){
+				totalPrice += car.getDouble("price");
+			}
+			totalPrice *= totalKm;
+			
+			
+			
+			param.put("totalKm", totalKm);
+			param.put("price", totalPrice);
+			
+			double downPayment = totalPrice*0.1;
+			param.put("downPayment", downPayment);
+			
+			//将具体要支付的价格传到前端
+			if(param.getString("payMethod").equals("ALLPAY")){
+				res.put("price", totalPrice);
+			}else if(param.getString("payMethod").equals("PARTPAY")){
+				res.put("price", totalPrice*0.1);
+			}
+		}
+		
+		//三、数据库表操作
+		
+		//1.订单表
+		dao.save("OrderFormMapper.insertOrderForm", param);
+		//2.订单Item表
+		dao.save("OrderItemMapper.insertOrderItem", param);
+		
+		//3.车辆状态表(更新车子的状态为绑定状态)
+		param.put("newState", XConst.CAR_STATE.BINDROUTE.toString());
+		param.put("oldState", XConst.CAR_STATE.LOCKED.toString());
+		dao.update("CarManagerMapper.updateCarState", param);
+		
+		res.put("orderId", param.get("orderFormId"));//返回订单号
+		
+		if(XConst.ROUTE_TYPE.USER_DEFINED.toString().equals(param.getString(XConst.RT))){
+			res.put(XConst.RT, XConst.ROUTE_TYPE.USER_DEFINED);
+		}
+		
+		res.putStatus(XConst.SUCCESS);
+		
+		
+		//四、下单成功通知
+		
+		//1.获得需要通知的前台用户
+		param.put("USER_ID", param.get("userId"));
+		PageData user = (PageData) dao.findForObject("AppuserMapper.findByUiId", param);
+		
+		
+		//2.编辑消息内容
+		String	message; 	//通知前台用户的消息
+		String adminMessage;//通知后台用户的消息
+		
+		if(XConst.ROUTE_TYPE.USER_DEFINED.toString().equals(param.getString(XConst.RT))
+				||
+				(acOther!=null && addChargesIds==null)){//自定义路线 或自定义附加体验
+				
+			message = "您已下单成功,您提交的路线是自定义路线或包含自定义内容，我们正在审核中...";
+
+			adminMessage = "有用户提交自定义订单,请登录后台管理系统进行审核！订单号：" + orderCode;
+			
+		}else{ //常规路线
+			
+			List<PageData> carGroups = (List<PageData>) dao.findForList("CarManagerMapper.getCarGroups", param);
+			StringBuilder carMessage = new StringBuilder();
+			for(PageData carGroup : carGroups ){
+				carMessage.append(carGroup.getString("carType")+carGroup.getString("carCount")+"辆；");
+			}
+			message = "您已下单成功,订单号："+orderCode+"车辆信息："+carMessage+"订单金额："+ totalPrice+"，请在半小时内完成支付，否则订单将自动关闭！";
+			adminMessage = "有用户提交订单,请登录后台管理系统查看，订单号：" + orderCode+"车辆信息："+carMessage;
+			
+		}
+		
+		
+		//3.发送通知
+		
+		//3.1. 通知前台用户
+		
+		//3.1.1.短信通知
+		SMSHelper.sendSms(user.getString("PHONE"), message);
+		
+		//3.1.2.邮件通知
+		SimpleMailSender.sendEmail(user.getString("EMAIL"), "用户订车通知", message, "2");
+		
+		//3.2通知后台用户
+		
+		//3.2.1.短信通知
+		SMSHelper.sendSms(ConfigLoad.getStringValue("webapp.send_phone"), adminMessage);
+		
+		//3.2.1.邮件通知
+		SimpleMailSender.sendEmail(ConfigLoad.getStringValue("webapp.send_notice_email"), "用户订车通知",adminMessage, "2");
+		
+		return res;
+	}
+	
+	
+	/**
+	 * 检查当前订单是否处于某个状态
+	 * 
+	 * @param orderId
+	 * @param orderState
+	 * @return
+	 * @throws Exception
+	 */
+	public boolean checkOrderState(Long orderId, String orderState) throws Exception {
+		PageData params = new PageData();
+		params.put("orderId", orderId);
+		params.put("orderState", orderState);
+		Integer count = (Integer) dao.findForObject("OrderFormMapper.checkOrderState", params);
+		return count >= 1;
+	}
+	
+	/**
+	 * 获取订单的真实金额
+	 * 
+	 * @param orderId
+	 * @return
+	 * @throws Exception
+	 */
+	public Double findRealPriceByOrderId(Long orderId) throws Exception {
+		PageData params = new PageData();
+		params.put("orderId", orderId);
+		return (Double) dao.findForObject("OrderFormMapper.findRealPriceByOrderId", params);
+	}
+	
+	/**
+	 * 获取订单的真实金额和支付的方法
+	 * 
+	 * @param orderId
+	 * @return
+	 * @throws Exception
+	 */
+	public PageData getPayByOrderId(Long orderId) throws Exception {
+		PageData params = new PageData();
+		params.put("orderId", orderId);
+		return (PageData) dao.findForObject("OrderFormMapper.getPayByOrderId", params);
+	}
+	
+	/**
+	 * 
+	 * 支付保存
+	 * 
+	 * @param orderId
+	 * @param orderType
+	 * @param payType
+	 * @param payOrderId
+	 * @return
+	 * @throws Exception
+	 */
+	public boolean updateOrderPay(Long orderId, String orderType, String payType, String payOrderId, String payMethod)throws Exception {
+		System.out.println("---------updateOrderPay------------");
+		PageData params = new PageData();
+		params.put("orderId", orderId);
+		//params.put("newState", XConst.ORDER_STATE.PAY_OK.toString());
+		//params.put("oldState", XConst.ORDER_STATE.WAITPAY.toString());
+		params.put("payOrderId", payOrderId);
+		params.put("payType", payType);
+		
+		PageData orderInfo=(PageData) dao.findForObject("OrderFormMapper.findOrderDetail", params);
+		if(XConst.ORDER_STATE.PAY_OK.toString().equals(orderInfo.get("orderState"))){
+			System.out.println("PAYOK");
+			return true;
+		}
+		if(XConst.PAY_METHOD.ALLPAY.toString().equals(payMethod)){
+			if(XConst.ORDER_STATE.WAITPAY.toString().equals(orderInfo.get("orderState"))){
+				System.out.println("WAITPAY****************");
+				params.put("newState", XConst.ORDER_STATE.PAY_OK.toString());
+				params.put("oldState", XConst.ORDER_STATE.WAITPAY.toString());
+			}else if(XConst.ORDER_STATE.CHECKSUCCESS.toString().equals(orderInfo.get("orderState"))){
+				params.put("newState", XConst.ORDER_STATE.PAY_OK.toString());
+				params.put("oldState", XConst.ORDER_STATE.CHECKSUCCESS.toString());
+			}
+		}else if(XConst.PAY_METHOD.PARTPAY.toString().equals(payMethod)){
+			if(XConst.ORDER_STATE.WAITPAY.toString().equals(orderInfo.get("orderState"))){
+				params.put("newState", XConst.ORDER_STATE.DOWNPAYMENT.toString());
+				params.put("oldState", XConst.ORDER_STATE.WAITPAY.toString());
+			}else{
+				return false;
+			}
+		}else if(XConst.PAY_METHOD.PARTPAYED.toString().equals(payMethod)){
+			if(XConst.ORDER_STATE.DOWNPAYMENT.toString().equals(orderInfo.get("orderState"))){
+				params.put("newState", XConst.ORDER_STATE.PAY_OK.toString());
+				params.put("oldState", XConst.ORDER_STATE.DOWNPAYMENT.toString());
+			}else{
+				return false;
+			}
+		}else{
+			return false;
+		}
+		dao.update("OrderFormMapper.updateOrderState", params);
+		//更新车的出行率
+		List<PageData> carList = (List<PageData>) dao.findForList("CarManagerMapper.getCarTripRateByStateId", orderInfo);
+		for(int i=0; i<carList.size(); i++){
+			long tripRate = carList.get(i).getLong("trip_rate");
+			tripRate += 1;
+			carList.get(i).put("tripRate", tripRate);
+			dao.update("CarManagerMapper.addCarTripRate", carList.get(i));
+		}
+		System.out.println("发送短信...............1");
+		System.out.println("user不等于null****************");
+		PageData param = new PageData();
+		param.put("USER_ID", orderInfo.getString("userId"));
+		System.out.println(orderInfo.getString("userId")+"*************************");
+		PageData userPd = (PageData)dao.findForObject("AppuserMapper.findByUiId", param);
+		//String mobile = userPd.getString("PHONE");
+		String email = userPd.getString("EMAIL");
+		String name = userPd.getString("NAME");
+		StringBuffer sb = new StringBuffer("尊敬的" + name);
+		sb.append("，您好!您于" + DATE_H_M_CN_FORMAT.format(orderInfo.get("createTime")));
+		sb.append("预定的车辆已支付成功，");
+		sb.append("总金额：" + orderInfo.getString("price") + "元。");
+		sb.append("订单号：" + orderInfo.get("orderCode") + "(请妥善保管)，");
+		sb.append("我们会在您指的的时间内为你提供相应的车辆!");
+		sb.append("如有疑问请联系龙行云客服：" + ConfigLoad.getStringValue("SMS.CONTENT_TEL") + "，我们将竭诚为您服务，祝您生活愉快！");
+		
+		System.out.println("发送短信...............");
+		SMSHelper.sendSms(orderInfo.getString("personPhone"), sb.toString());
+		
+		SimpleMailSender.sendEmail(email, "用户订车通知", sb.toString(), "2");
+		
+		if("on".equals(ConfigLoad.getStringValue("webapp.driver_sms"))){
+			//smsDri(orderId);
+		}
+		
+		
+		return true;
+	}
+	
+	
+	/**
+	 * 获取订单列表
+	 * @param param
+	 * @return
+	 * @throws Exception
+	 */
+	public PageData findOrderList(PageData param) throws Exception {
+		Integer total = (Integer) dao.findForObject("OrderFormMapper.findOrderListCount", param);
+		List<PageData> list = (List<PageData>)dao.findForList("OrderFormMapper.findOrderList", param);
+		System.out.println("-------findOrderList------list="+list);
+		param.clear();
+		param.put("data", list);
+		param.put("recordsTotal", total);
+		param.put("recordsFiltered", total);
+		return param;
+	}
+	
+	
+	/**
+	 * 验证能否申请退款
+	 * 
+	 * @param pd
+	 * @return
+	 * @throws Exception
+	 */
+	public Long checkRefund(PageData pd) throws Exception {
+		return (Long) dao.findForObject("OrderFormMapper.checkRefund", pd);
+	}
+
+	/**
+	 * 申请退款
+	 * 
+	 * @param pd
+	 * @throws Exception
+	 */
+	public void refund(PageData pd) throws Exception {
+		//dao.update("OrderFormMapper.updatePerson", pd);
+		dao.update("OrderFormMapper.refund", pd);
+	}
+	
+	/**
+	 * 验证订单能否删除
+	 * 
+	 * @param pd
+	 * @return
+	 * @throws Exception
+	 */
+	public Long checkDelete(PageData pd) throws Exception {
+		return (Long) dao.findForObject("OrderFormMapper.checkDelete", pd);
+	}
+
+	/**
+	 * 删除订单
+	 * 
+	 * @param pd
+	 * @throws Exception
+	 */
+	public void deleteOrder(PageData pd) throws Exception {
+		dao.update("OrderFormMapper.deleteOrder", pd);
+	}
+	
+	
+	/**
+	 * 新增一条退款信息
+	 * 
+	 * @param param
+	 * @throws Exception
+	 */
+	public void saveRefund(PageData param) throws Exception {
+		//删除已存在的之前申请过的退款信息，只保留最新的
+		int count = (Integer)dao.save("OrderFormMapper.deleteRefund", param);
+		// 保存退款申请信息
+		dao.save("OrderFormMapper.addRefund", param);
+		// 修改订单状态为退款中
+		PageData orderData = new PageData();
+		orderData.put("orderId", param.get("formId"));
+		orderData.put("newState", XConst.ORDER_STATE.REFUNDING.toString());// 新状态：退款中
+		//如果之前没有申请过退款，则之前状态为支付成功
+		if(count == 0){
+			orderData.put("oldState", XConst.ORDER_STATE.PAY_OK.toString());// 原状态：支付成功
+		}
+		//如果之前没有申请过退款，则之前状态为退款失败
+		else{
+			orderData.put("oldState", XConst.ORDER_STATE.REFUNDING_FAIL.toString());// 原状态：退款失败
+		}
+		dao.update("OrderFormMapper.updateOrderState", orderData);
+	}
+	
+	/**
+	 * 取消订单
+	 * 
+	 * @param pd
+	 * @throws Exception
+	 */
+	public void cannelOrder(PageData pd) throws Exception {
+		dao.update("OrderFormMapper.cannelOrder", pd);
+		
+		PageData param = (PageData)dao.findForObject("OrderFormMapper.getCarStateIdsByFormId", pd);
+		
+		dao.update("CarManagerMapper.deleteCarState", param);
+	}
+
+	/**
+	 * 验证取消订单 查询对应的未支付订单ID
+	 * 
+	 * @param pd
+	 * @return
+	 * @throws Exception
+	 */
+	public Long checkCannel(PageData pd) throws Exception {
+		return (Long) dao.findForObject("OrderFormMapper.checkCannel", pd);
+	}
+	
+	/**
+	 * 查询订单详情
+	 * 
+	 * @param id
+	 * @return
+	 * @throws Exception
+	 */
+	public PageData findOrderDetail(Long orderId) throws Exception {
+		PageData param = new PageData();
+		param.put("orderId", orderId);
+		return (PageData) dao.findForObject("OrderFormMapper.findOrderDetail", param);
+	}
+	
+	
+	/*前端获取订单列表
+	 * */
+	/**
+	 * 查询深度游订单列表
+	 * 
+	 * @param param
+	 * @return
+	 * @throws Exception
+	 */
+	/*Integer total = (Integer) dao.findForObject("OrderFormMapper.findOrderListCount", param);
+	List<PageData> list = (List<PageData>)dao.findForList("OrderFormMapper.findOrderList", param);*/
+	public PageData getOrderList(PageData param) throws Exception {
+		PageData res = new PageData();
+		int pageSize = 5;
+		Long total = (Long) dao.findForObject("OrderFormMapper.getOrderListCount", param);
+		
+		Long totalPage = total % pageSize == 0 ? total / pageSize : total / pageSize + 1;
+		Long pageNo = (HString.isEmpty(param.getLong("pageNo")) ? 1 : param.getLong("pageNo"));
+		
+		param.put("startLine", (pageNo - 1) * pageSize);
+		param.put("showLine", pageSize);
+		List<PageData> list = (List<PageData>) dao.findForList("OrderFormMapper.getOrderList", param);
+		res.put("list", list);
+
+		res.putStatus(XConst.SUCCESS);
+		res.put("totalPage", totalPage);
+		res.put("pageNo", param.getLong("pageNo"));
+		return res;
+	}
+	
+	/******************************************gcy***********************************************/
+	/**
+	 * 获取某个用户的订单列表
+	 * @param param
+	 * @return
+	 * @throws Exception 
+	 */
+	public PageData getOrderListByUserId(PageData param) throws Exception{
+		
+		int pageNum = param.getInt("pageNum");
+		
+		//假设每页显示XConst.MOBILE_PAGE_SIZE条订单
+		param.put("showLine",XConst.MOBILE_PAGE_SIZE);
+		
+		param.put("startLine", (pageNum-1)*XConst.MOBILE_PAGE_SIZE);
+		
+		List<PageData> orderList = (List<PageData>) dao.findForList("OrderFormMapper.getOrderListByUserId",param);
+		Integer ordersTotal = (Integer) dao.findForObject("OrderFormMapper.getOrdersTotal", param.getString("userId"));
+		
+		PageData res = new PageData();
+		res.put("orderList", orderList);
+		res.put("ordersTotal", ordersTotal);
+		
+		return res;
+	}
+	
+	/**
+	 *获得某一个订单的概况（general situation）
+	 * @param orderId
+	 * @return
+	 * @throws Exception
+	 */
+	public PageData getOrderGenSitById(Long orderId) throws Exception{
+		
+		PageData orderGenSit = (PageData) dao.findForObject("OrderFormMapper.getOrderGenSitById", orderId);
+		
+		return orderGenSit;
+	}
+	
+
+	/**
+	 *获取拒绝退款原因 
+	 * @param orderId
+	 * @return
+	 * @throws Exception
+	 */
+	public PageData getRefuseReason(Long orderId) throws Exception{
+		PageData pd = (PageData) dao.findForObject("OrderFormMapper.getRefuseReason", orderId);
+		
+		return pd;
+	}
+	
+	/**
+	 * 短信通知订单内所有司机
+	 * @param formId
+	 * @throws Exception 
+	 */
+	public void smsAllDris(Long  formId) throws Exception{
+		
+		//1.先查出这个订单的carStateIds字符串
+		 PageData data = (PageData) dao.findForObject("OrderFormMapper.getCarStateIdsByFormId",formId);
+		 
+		 //2.再根据carStateIds查出对应车辆的司机（包括司机姓名和电话号码）
+		 List<PageData> driNamsAndTelsLis = (List<PageData>) dao.findForList("OrderFormMapper.getDriNamsAndTelByCarStaIds", data);
+		 
+		 //3.发送短信通知
+		 for(PageData driver : driNamsAndTelsLis){
+			 String message = "尊敬的"+driver.getString("name")+",您的车于"+driNamsAndTelsLis.get(0).getString("startTime")+"有出行，请及时做好准备！谢谢配合！";
+			 SMSHelper.sendSms(driver.getString("tel"),message);
+		 }
+		 
+		 //4.更新数据库（表示相应车辆锁定状态记录已通知到司机）
+		 dao.update("OrderFormMapper.alrSmsDri", formId);
+	}
+	
+	
+	/**
+	 * 短信通知一位司机
+	 * @param driverId
+	 * @throws Exception
+	 */
+	public void smsOneDri(String name,String tel,String startTime,Long carStaId) throws Exception{
+		String message = "尊敬的"+name+"师傅,您的车于"+startTime+"有出行，请及时做好准备！谢谢配合！";
+		SMSHelper.sendSms(tel, message);
+		dao.update("CarStateMapper.notDri",carStaId);
+	}
+}

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DriCarStaIntAssMapper">
+	
+	<!--查找指定时间段内空闲的司机  getIdleDrivers-->
+	<select id="getIdlDris" parameterType="pd" resultType="pd">
+		select id,`name` FROM lxy_driver where id NOT in(
+		<!--查出正忙的司机  -->
+		select distinct(driver_id) from lxy_car_state where ((start_time BETWEEN #{startTime} and #{endTime})  OR (#{startTime} BETWEEN  start_time and end_time)) and  use_state = 'LOCKED' and driver_id IS NOT NULL)
+	</select>
+	
+	<!-- 从lxy_car_state 中查找指定的driver_id(看是否能找到，如果能找到，则该司机正忙，否则该司机是空闲的)-->
+	<select id="getDriId" parameterType="pd" resultType="java.lang.Long">
+		select DISTINCT(driver_id) from lxy_car_state where 
+		((start_time BETWEEN #{startTime} and #{endTime}) OR (#{startTime} BETWEEN  start_time and end_time) )
+		 and  use_state = 'LOCKED'  AND driver_id = #{driverId} for update
+	</select>
+	
+	<!--将司机分配给某个订单的某辆车  -->
+	<update id="carStaAssDri" parameterType="pd">
+		update lxy_car_state set driver_id=#{driverId} where id=#{carStaId}
+	</update>
+	
+	
+	
+	
+</mapper>
+

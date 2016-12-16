@@ -1,0 +1,109 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" import="com.lx.util.XConst" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%
+	String path = request.getContextPath();
+	String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
+%>
+
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta content="text/html">
+<base href="<%=basePath%>">
+<meta name="renderer" content="webkit|ie-comp|ie-stand">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+<!--[if lt IE 9]>
+<script type="text/javascript" src="static/h-ui-lib/html5.js"></script>
+<script type="text/javascript" src="static/h-ui-lib/respond.min.js"></script>
+<script type="text/javascript" src="static/h-ui-lib/PIE_IE678.js"></script>
+<![endif]-->
+<link rel="stylesheet" type="text/css" href="static/h-ui/css/H-ui.css" />
+<link rel="stylesheet" type="text/css" href="static/h-ui-lib/Hui-iconfont/1.0.7/iconfont.css" />
+<link rel="stylesheet" type="text/css" href="static/h-ui-lib/icheck/icheck.css" />
+<link rel="stylesheet" type="text/css" href="static/css/jquery.datetimepicker.css"/>
+<link rel="stylesheet" type="text/css" href="static/app/pc/css/style2.0.css"/>
+
+<!--[if lt IE 9]>
+<link href="static/h-ui/css/H-ui.ie.css" rel="stylesheet" type="text/css" />
+<![endif]-->
+<!--[if IE 6]>
+<script type="text/javascript" src="static/h-ui-lib/DD_belatedPNG_0.0.8a-min.js" ></script>
+<script>DD_belatedPNG.fix('*');</script>
+<![endif]-->
+<title>订单支付</title>
+<meta name="keywords" content="">
+<meta name="description" content="">
+</head>
+<body>
+<header class="navbar-wrapper">
+	<jsp:include page="../../common/header.jsp"></jsp:include>
+</header>
+
+<section class="container">
+	<div class="panel panel-default mt-50">
+		<div class="panel-body">
+			<div class="cl pd-40">
+				<div class="f-l mt-5">
+					<div class="pay-arrow"></div>
+				</div>
+				<div class="f-l ml-40">
+					<c:if test="false">
+						<span class="f-24"><strong>订单已经审核通过，请在24小时内完成支付</strong></span>
+					</c:if>
+					<c:if test="true">
+						<span class="f-24"><strong>订单已经生成，请在30分钟内完成支付</strong></span>
+					</c:if>
+					<p class="f-18 mt-10">订单编号：${orderForm.orderCode }</p>
+					<p class="f-18">订单总额：<span style="color:#44dbdb;"><strong>￥$<fmt:formatNumber type="number" value="${orderForm.price }" pattern="#.00"/></strong></span></p>
+				</div>
+			</div>
+			
+			<div class="mt-50" style="border-bottom: 1px dashed #b3ebf0;"></div>
+			
+			<div class="cl" id="pay_select" style="padding:180px 200px;">
+				<div class="f-l">
+					<input id="alipay" class="btn btn-lxy-solid size-XL radius" type="button" value="支付宝支付"/>
+				</div>
+				<div class="f-r">
+					<input id="wxpay" class="btn btn-lxy-solid size-XL radius" type="button" value="微信支付"/>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<jsp:include page="../../common/footer.jsp"></jsp:include>
+
+<script type="text/javascript" src="static/h-ui-lib/jquery/1.9.1/jquery.min.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/layer/2.1/layer.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/laypage/1.2/laypage.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/My97DatePicker/WdatePicker.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/icheck/jquery.icheck.min.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/bootstrap-Switch/bootstrapSwitch.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/Validform/5.3.2/Validform.min.js"></script> 
+<script type="text/javascript" src="static/js/jquery.datetimepicker.js"></script>
+<script type="text/javascript" src="static/h-ui/js/H-ui.js"></script>
+<script type="text/javascript" src="static/app/pc/js/base.js"></script>
+
+<script>
+$(function(){
+	
+	//选择支付宝
+	$("#alipay").click(function(){
+		location.href = "lxy/order/${appUser.USERNAME}/pay_success/${orderForm.id}"
+	});
+	
+	//选择微信
+	$("#wxpay").click(function(){
+		layer.msg("微信支付暂未开通！");
+		return;
+	});
+
+});
+</script>
+</body>
+</html>

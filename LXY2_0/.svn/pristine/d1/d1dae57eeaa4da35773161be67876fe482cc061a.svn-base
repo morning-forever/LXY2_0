@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CarManagerMapper">
+
+	<!--车辆基本信息查询-->
+	<select id="getCarInfoListCount" parameterType="pd" resultType="java.lang.Integer">
+		select count(*) from (select lci.id,lct.`name`,lci.plate_number,lct.seat_num ,lct.price  from lxy_car_info  lci
+		
+		LEFT JOIN lxy_car_type  lct on lci.car_type_id = lct.id
+		
+		<where>
+			lci.is_valid = 1
+			<if test="carTypeName != null and carTypeName != ''">
+				and lct.name = #{carTypeName}
+			</if>
+			<if test="plateNumber != null and plateNumber != ''">
+				and lci.plate_number = #{plateNumber}
+			</if>
+			<if test="seatNum != null and seatNum != ''" >
+				and lct.seat_num = #{seatNum}
+			</if>
+			<if test="price != null and price != '' ">
+				and lct.price = #{price}
+			</if>
+		</where>) t
+	</select>
+	
+	<select id="getCarInfoList" parameterType="pd" resultType="pd">
+		select lci.id,lct.`name`,lci.plate_number,lct.seat_num ,lct.price,lci.driver_id  from lxy_car_info  lci
+		LEFT JOIN lxy_car_type  lct on lci.car_type_id = lct.id 
+		<where>
+			lci.is_valid = 1
+			<if test="carTypeName != null and carTypeName != ''">
+				and lct.name = #{carTypeName}
+			</if>
+			<if test="plateNumber != null and plateNumber != ''">
+				and lci.plate_number = #{plateNumber}
+			</if>
+			<if test="seatNum != null and seatNum != ''" >
+				and lct.seat_num = #{seatNum}
+			</if>
+			<if test="price != null and price != '' ">
+				and lct.price = #{price}
+			</if>
+		</where>
+		
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select>
+	
+	<!--新增一辆车  -->
+	<insert id="insertOneCar" parameterType="pd">
+		insert into lxy_car_info(create_time,plate_number,car_type_id) values(NOW(),#{plateNumber},#{carTypeId})
+	</insert>
+	<!--删除一辆车  -->
+	<delete id="deleteOneCar" parameterType="java.lang.Long">
+		delete from lxy_car_info where id = #{id}
+	</delete>
+	<!-- 逻辑删除 -->
+	<update id="logicDelOneCar" parameterType="java.lang.Long">
+		update lxy_car_info set is_valid=0 where id = #{id}
+	</update>	
+	<!--查询一辆车 -->
+	<select id="getOneCarById" parameterType="java.lang.Long" resultType="pd">
+		SELECT  lci.id,lct.name,lct.seat_num as seatNum,lci.plate_number as plateNumber from lxy_car_info  lci 
+		
+		LEFT JOIN lxy_car_type lct ON lci.car_type_id = lct.id where  lci.id=#{id}
+	</select>
+	
+	<!--更新一辆车  -->
+	<update id="updateOneCar" parameterType="pd">
+		update lxy_car_info set plate_number=#{plateNumber} where id=#{id}
+	</update>
+	
+	<!--绑定司机  -->
+	<update id="bindDriver" parameterType="pd">
+		update lxy_car_info set driver_id = #{driverId} where id = #{carId}
+ 	</update>
+ 	
+ 	
+	<!-- 查可使用车辆列表 -->
+	<select id="getAvailableCars" resultType="pd" parameterType="pd">
+			<!--总共-已使用 = 可使用  -->
+		select  tb_t.id as typeId,tb_t.`name`,tb_t.seat_num as seatNum,tb_t.price,tb_t.total- IFNULL(tb_u.used,0)  as availableCarNum from 
+			<!--查出每一种类型总共有多少车  -->
+			(select lct.id,lct.`name`,lct.seat_num,lct.price,count(lci.id) as total from lxy_car_type lct 
+
+			LEFT JOIN lxy_car_info lci  ON lci.car_type_id =  lct.id
+
+			GROUP BY lct.id) tb_t
+
+		LEFT JOIN  
+		
+			<!--查出每一种类型已经使用了多少车  -->
+			(select lct.id,lct.`name`,count(DISTINCT lci.id) used from lxy_car_state lcs 
+			
+			LEFT JOIN lxy_car_info lci ON lcs.car_id = lci.id
+			LEFT JOIN lxy_car_type lct ON lct.id = lci.car_type_id
+			
+			WHERE lcs.use_state = 'LOCKED' and
+			(#{startTime} between lcs.start_time and lcs.end_time) or (lcs.start_time between #{startTime} and #{endTime})
+			
+			GROUP BY lct.id) tb_u ON tb_t.id = tb_u.id ORDER BY seatNum ASC
+	</select>
+	
+	<!--查出将要被锁定的车辆 -->
+	<select id="getWillBeLockedCars" parameterType="com.lx.bo.LockCar" resultType="pd">
+		
+		<!-- 循环查找每一种类型的车应该分配的具体车辆 -->
+		<foreach collection="needCars" item="item" separator=" UNION ">
+			
+			<!-- 查找每一种类型的车应该分配的具体车辆  -->
+			(select lci.id,lci.plate_number as plateNum,lct.id as typeId,lct.`name`,lct.price,lct.seat_num as seatNum from lxy_car_info lci
+
+				LEFT JOIN lxy_car_type lct  ON lci.car_type_id = lct.id
+
+			where lci.car_type_id=#{item.typeId} and lci.id NOT IN
+				
+				<!--要分配的具体车辆一定不能是"已被占用"状态  -->
+				(select DISTINCT lcs.car_id from lxy_car_state  lcs
+				
+				 LEFT JOIN lxy_car_info lci ON lcs.car_id = lci.id
+						
+				WHERE  lcs.use_state = 'LOCKED' and
+				((#{startTime} between lcs.start_time and lcs.end_time) or (lcs.start_time between #{startTime} and #{endTime})) lock in share mode
+				)
+			
+			ORDER BY trip_times ASC,id ASC  LIMIT 0,#{item.count})
+		</foreach>
+		order by seatNum asc
+	</select>
+	
+	<!--分配车辆，将其锁定  -->
+	<insert id="lockCars" parameterType="com.lx.bo.LockCar">
+		insert into  lxy_car_state(create_time,start_time,end_time,car_id,user_id,use_state) values
+		<foreach collection="willBeLockedCars" item="item" separator=",">
+			(NOW(),#{startTime},#{endTime},#{item.id},#{userId},'LOCKED')			
+		</foreach>
+	</insert>
+	
+	<!-- 查出锁车信息的id列表 -->
+	<select id="getCarStateIds" parameterType="com.lx.bo.LockCar" resultType="java.lang.Long">
+		select id from lxy_car_state where start_time = #{startTime} and end_time = #{endTime} and car_id in
+		<foreach collection="willBeLockedCars" item="car" separator="," open="(" close=")">
+			#{car.id}
+		</foreach>
+	</select>
+	
+	
+	<!--出行次数+1 -->
+	<update id="batchUpdateCarTripTimes" parameterType="java.util.List">
+		update lxy_car_info set trip_times=trip_times+1 where id in
+		
+		<foreach collection="list" item="item" open="(" close=")" separator=",">
+			#{item.id}			
+		</foreach>
+	</update>
+	
+	<!--出行次数回减  -->
+	<update id="batchBackMinus" >
+		update lxy_car_info set trip_times=trip_times-1 where id in
+		
+		<foreach collection="list" item="item" open="(" close=")" separator=",">
+			#{item.id}			
+		</foreach>
+	</update>
+	
+	
+		
+	
+</mapper>
+

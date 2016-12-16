@@ -1,0 +1,353 @@
+@CHARSET "UTF-8";
+
+body{
+	background:#f3f8f8;
+}
+
+.lxy-nav > ul > li > a:hover,.lxy-nav > ul > li.current > a{
+	background-color:rgba(255,255,255,0); text-decoration:none;
+	-webkit-transition: background-color 0.3s ease 0s;
+	-moz-transition: background-color 0.3s ease 0s;
+	-o-transition: background-color 0.3s ease 0s;
+	-ms-transition: background-color 0.3s ease 0s;
+	transition: background-color 0.3s ease 0s;
+	font-weight:bold;
+}
+
+/*默认状态*/
+.lxy-input-text,.lxy-textarea{
+	box-sizing:border-box;border:solid 0px #ddd;width:100%;
+    -webkit-transition:all 0.2s linear 0s;
+       -moz-transition:all 0.2s linear 0s;
+         -o-transition:all 0.2s linear 0s;
+            transition:all 0.2s linear 0s
+}
+.lxy-input-text-bc,.lxy-textarea-bc{
+	background-color:#f5f6f6;
+}
+.lxy-textarea{ height:auto; font-size:14px; padding:4px}
+.lxy-input-text:hover,.lxy-textarea:hover{border: solid 0px #ddd}
+/*得到焦点后*/
+.lxy-input-text.focus,.lxy-textarea.focus{
+	border:solid 0px #0f9ae0 \9;
+	border-color:solid 1px #ddd;
+	box-shadow:0 0px 0px rgba(0, 0, 0, 0.075) inset, 0 0 0px rgba(0, 0, 0, 0.6)
+}
+
+.remark-texttarea{
+	border:solid 1px #ddd;
+	margin:40px 0;
+	background-color:#f5f6f6;
+	height:223px;
+	margin-left:16px;
+	border-radius: 5px;
+	width:80%;
+}
+
+.remark-texttarea:hover{border: solid 1px #ddd}
+
+.remark-texttarea.focus{
+	border:solid 0px #0f9ae0 \9;
+	border-color:solid 1px #ddd;
+	box-shadow:0 0px 0px rgba(0, 0, 0, 0.075) inset, 0 0 0px rgba(0, 0, 0, 0.6)
+}
+
+.footer {
+	background-color:#222;
+	border-bottom:#080808 1px solid;
+	-moz-box-shadow: 0 0 4px #333333;
+	-webkit-box-shadow: 0 0 4px #333333;
+	box-shadow: 0 0 4px #333333;
+    margin-top: 50px;
+    padding-bottom: 20px;
+}
+
+.bd-bottom{
+	border-bottom:1px solid #ddd;
+}
+
+.btn-green{
+	color:#fff;
+	background-color:#0ACFDA;
+	border-color:#0ACFDA;
+}
+
+.btn-lxy-solid{
+	color:#fff;
+	font-size:20px;
+	width:300px;
+	border-radius: 10px;
+	background-color:#44dbdb;
+	font-weight:bold;
+}
+.btn-lxy-solid:hover,
+.btn-lxy-solid:focus,
+.btn-lxy-solid:active,
+.btn-lxy-solid.active{color:#fff;background-color:#44dbdb;border-color:#44dbdb}
+
+
+.btn-lxy-hollow{
+	width:140px;
+	color:#44dbdb;
+	background-color:transparent;
+	background-image:none;
+	border-color:#44dbdb;
+}
+.btn-lxy-hollow.active,
+.btn-lxy-hollow.focus,
+.btn-lxy-hollow:active,
+.btn-lxy-hollow:focus,
+.open>.btn-lxy-hollow.dropdown-toggle{color:#44dbdb;background-color:transparent;border-color:#44dbdb}
+.btn-lxy-hollow:hover{color:#44dbdb;background-color:transparent;border-color:#44dbdb}
+
+
+.home-item{
+	padding:0 20px;
+	background-color:#fff;
+}
+
+.item-title{
+	font-size:20px;
+	padding:0 10px;
+	border-left:solid 5px #90d3db;
+}
+
+/*复合的btn*/
+.lxy-complex-btn{
+	position:relative;
+	box-sizing:border-box;
+	border:solid 1px #ddd;
+    -webkit-transition:all 0.2s linear 0s;
+    -moz-transition:all 0.2s linear 0s;
+	-o-transition:all 0.2s linear 0s;
+	transition:all 0.2s linear 0s;
+	height:50px;
+	width:350px;
+	background-color:#fff;
+	border-radius: 5px;
+}
+
+.lxy-complex-btn .c-left{
+	float:left;
+    font-size: 16px;
+    height: 100%;
+    line-height:50px;
+    padding:0 10px;
+    width:20%;
+}
+
+.lxy-complex-btn .c-right{
+	float:left;
+	width:72%;
+}
+
+.lxy-complex-btn .c-right input{
+	height:48px;
+	font-size:16px;
+	width:100%;
+}
+
+.lxy-complex-btn .c-right .i-date {
+	position: absolute;
+    display: inline-block;
+    top: 4px;
+  	right: 5px;
+    overflow: hidden;
+    cursor: pointer;
+    font-size:24px;
+}
+
+.lxy-pipe{
+	float:left;
+	font-size:20px;
+	line-height:48px;
+	color:#ddd;
+}
+
+
+/*翻页按钮*/
+.pagination {
+	display: block;
+	text-align: center;
+	margin-top:40px;
+}
+
+.pagination span, .pagination a {
+	display: inline-block;
+	vertical-align: middle;
+	padding: 0 14px;
+	height: 26px;
+	line-height: 26px;
+	margin: 0 2px;
+	color: #333;
+	background: #fff;
+	border: 1px solid #dbdbdb;
+	font-size: 12px;
+	border-radius: 1px
+}
+
+.pagination a.disabled {
+	color: #949494;
+	border: 1px solid #dbdbdb
+}
+
+.pagination a.disabled:hover {
+	color: #949494;
+	border: 1px solid #dbdbdb
+}
+
+.pagination a:hover {
+	border: 1px solid #0ACFDA
+}
+
+.pagination a.current {
+	border: 1px solid #0ACFDA;
+    background: #0ACFDA;
+    color: #fff;
+}
+
+.pagination span.p_text {
+	border: none;
+	background: none;
+	padding: 0 2px
+}
+
+.pagination .gotopage {
+	font-size: 12px;
+	border: 1px solid #dbdbdb;
+	width: 30px;
+	line-height: 26px;
+	background: #fff;
+	margin: 0 5px;
+	text-align: center
+}
+/*翻页按钮*/
+
+.car_select{
+	height:450px;
+	overflow:scroll; /*任何时候都强制显示滚动条*/
+	overflow:auto; /*需要的时候会出现滚动条*/
+	overflow-y:auto; /*控制Y方向的滚动条*/
+}
+
+.car_num {
+    width: 50px;
+    height: 26px;
+    display: inline-block;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+.del_num_btn, .add_num_btn {
+    display: inline-block;
+    width: 30px;
+    height: 28px;
+    color: #333;
+    text-align: center;
+    cursor: pointer;
+    font-size: 20px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+.popupBtn{
+	height:36px;
+	/* padding-left:70%; */
+	margin:10px 50px;
+	position: absolute;
+	right:0;
+	z-index:100;
+	bottom:0px;
+}
+
+.status-tab .status-tabBar ul li{
+	display:block;
+	text-align:center;
+	cursor:pointer;
+	padding: 7px 20px;
+	font-size:16px;
+}
+
+.status-tab .status-tabBar #tab_active{
+	background:#ddd;
+} 
+
+.tab-content .panel-header ul li{
+	float:left;
+}
+
+.tab-content > .panel-header {
+    border-color: #ddd;
+    background-color: #f5f5f5;
+    color: #444;
+}
+
+.tab-content .item-up{
+	padding:10px 30px;
+}
+
+.tab-content .item-down td{
+	font-size:14px;
+}
+
+.tab-content .item-down .div-btn{
+	padding:8px 0;
+	cursor: pointer;
+	color: #00F0FE;
+}
+
+.submit-order .left{
+	margin-left:20px;
+	width:100px;
+	text-align:right;
+}
+
+.person-center .current{
+	background-color:#ddd;
+}
+
+.pay_icon{
+	background-image: url(../image/payment-icon.png);
+}
+
+.alipay{
+	margin-top: 15px;
+	background-position: -88px -66px;
+	width:245px;
+	height:53px;
+	display: inline-block;
+	vertical-align: middle;
+}
+.wxpay{
+	background-position: -88px -176px;
+	width:245px;
+	height:71px;
+	display: inline-block;
+	vertical-align: middle;
+}
+
+#pay_select .selected{
+	border:solid #00f1ff;
+}
+
+#pay_select div{
+	cursor: pointer;
+}
+
+.pay-arrow{
+	background: url(../image/pay_arrow.png);
+	display: inline-block;
+	vertical-align: middle;
+	width: 116px;
+    height: 108px;
+    background-repeat:no-repeat;
+}
+
+.verify-arrow{
+	background: url(../image/verify_arrow.png);
+	display: inline-block;
+	vertical-align: middle;
+	width: 116px;
+    height: 108px;
+    background-repeat:no-repeat;
+}

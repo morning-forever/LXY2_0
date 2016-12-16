@@ -1,0 +1,271 @@
+package com.lx.controller.system.lxy.order;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.session.Session;
+import org.apache.shiro.subject.Subject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.propertyeditors.CustomDateEditor;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.lx.controller.base.BaseController;
+import com.lx.entity.system.User;
+import com.lx.service.app.AddSvcService;
+import com.lx.service.app.CarManagerService;
+import com.lx.service.app.DistanceService;
+import com.lx.service.app.OrderFormService;
+import com.lx.service.system.appuser.AppuserService;
+import com.lx.service.system.lxy.AdminOrderService;
+import com.lx.util.Const;
+import com.lx.util.HString;
+import com.lx.util.PageData;
+import com.lx.util.XConst;
+
+/**
+ *
+ * 
+ * @author<br>
+ * 
+ */
+@Controller
+@RequestMapping(value = "admin/order")
+public class AdminOrderController extends BaseController {
+	
+	String menuUrl = "admin/order/list.do"; //菜单地址(权限用)
+	
+	@Autowired
+	private AdminOrderService adminOrderService;
+	
+	@Autowired
+	private OrderFormService orderFormService;
+
+	@Autowired
+	private AddSvcService additionalChargesService;
+	
+	@Autowired
+	private CarManagerService carManagerService;
+	
+	
+	@Autowired
+	private DistanceService distanceService;
+	
+	@Autowired
+	private AppuserService appuserService;
+	
+	/**
+	 *
+	 * 
+	 * @return
+	 */
+	@RequestMapping(value = "list")
+	public ModelAndView depthIndex() {
+		ModelAndView mav = new ModelAndView("system/lxy/order/order_list");
+		return mav;
+	}
+
+	/**
+	 * 
+	 * 
+	 * @return
+	 */
+	@RequestMapping(value = "listdata")
+	@ResponseBody
+	public PageData list() {
+		PageData res = new PageData();
+		try {
+			PageData param = getSysPageData();
+			String search = param.getString("search[value]");
+			if (!HString.isEmpty(search)) {
+				JSONObject json = JSON.parseObject(search);
+				param.put("nickName", json.get("nickName"));
+				param.put("orderCode", json.get("orderCode"));
+				param.put("payOrderId", json.get("payOrderId"));
+				param.put("personPhone", json.get("personPhone"));
+				param.put("orderState", json.get("orderState"));
+				param.put("orderTime", json.get("orderTime"));
+			}
+			res = adminOrderService.findOrderList(param);
+		} catch (Exception e) {
+			res.putStatus(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		return res;
+	}
+	
+	/**
+	 * 订单审核通过
+	 * @param id
+	 * @return
+	 */
+	@RequestMapping(value="checkSuccess",produces=XConst.JSON_PRODUCES)
+	@ResponseBody
+	public PageData checkSuccess(){
+		PageData param=getPageData();
+		try {
+			
+			adminOrderService.checkSuccess(param);
+			
+			param.putStatus(XConst.SUCCESS);
+
+		} catch (Exception e) {
+			param.putStatus(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		return param;
+	}
+	
+	/**
+	 * 订单审核不通过
+	 * @return
+	 */
+	@RequestMapping(value = "checkFail")
+	@ResponseBody
+	public PageData checkFail() {
+		PageData param = getPageData();
+		try {
+
+			adminOrderService.checkFail(param);
+
+			param.putStatus(XConst.SUCCESS);
+
+		} catch (Exception e) {
+			param.putStatus(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		return param;
+	}
+	
+	/**
+	 * 查询明细
+	 * 
+	 * @return
+	 */
+	@RequestMapping("/detail/{orderId}")
+	public ModelAndView orderDetail(@PathVariable Long orderId) {
+		ModelAndView mav = new ModelAndView();
+		try {
+			//获取订单基本信息
+			PageData orderPd = orderFormService.findOrderDetail(orderId);
+			mav.addObject("orderInfo", orderPd);
+			System.out.println("--------orderDetail------orderInfo="+orderPd);
+			
+			//获取角色名
+			PageData userInfo = appuserService.getUserInfoAByUid(orderPd.getString("userId"));
+			mav.addObject("userInfo", userInfo);
+			
+			//获取车辆信息
+			List<PageData> carList = carManagerService.getCarByIds(orderPd.getString("stateIds"));
+			mav.addObject("carList", carList);
+			System.out.println("--------orderDetail------carList="+carList);
+			
+			//获取附加费用信息
+			List<PageData> addChargesList = additionalChargesService.getAdditionalChargesByIds(orderPd);
+			mav.addObject("addChargesList", addChargesList);
+			System.out.println("--------orderDetail------orderInfo="+addChargesList);
+			mav.addObject("acOther",orderPd.getString("acOther"));
+			
+			//获取线路信息
+			System.out.println("--------orderDetail------routeIds="+orderPd.getString("routeIds"));
+			JSONArray distances =  JSONArray.parseArray(orderPd.getString("routeIds"));
+			
+			List<PageData> rList = distanceService.getRouteInfoByIdList(distances);
+			List<PageData> routeList = new ArrayList<PageData>();
+			for(int i = 0; i < distances.size(); i++) {
+				List<PageData> itemList = new ArrayList<PageData>();
+				PageData itemData=new PageData();
+				for(int j=0; j<rList.size(); j++){
+					if((i+1) == rList.get(j).getLong("day")){
+						itemList.add(rList.get(j));
+					}
+				}
+				itemData.put("itemList", itemList);
+				routeList.add(itemData);
+			}
+			mav.addObject("routeList", routeList);
+			System.out.println("--------routeList------routeList="+routeList);
+			
+			
+			mav.setViewName("system/lxy/order/detail");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return mav;
+	}
+	
+	@RequestMapping("applist")
+	public ModelAndView applist(){
+		
+		ModelAndView mav = new ModelAndView("system/lxy/order/order_applist");
+		
+		return mav;
+		
+	}
+	
+	/**
+	 * 
+	 * 
+	 * @return
+	 */
+	@RequestMapping(value = "appListData")
+	@ResponseBody
+	public PageData applistData() {
+		PageData res = new PageData();
+		try {
+			PageData param = getSysPageData();
+			
+			Subject currentUser = SecurityUtils.getSubject();  
+			Session session = currentUser.getSession();
+			User user = (User)session.getAttribute(Const.SESSION_USER);
+			String name = user.getNAME();
+			param.put("name", name);
+			String search = param.getString("search[value]");
+			if (!HString.isEmpty(search)) {
+				JSONObject json = JSON.parseObject(search);
+				param.put("nickName", json.get("nickName"));
+				param.put("orderCode", json.get("orderCode"));
+				param.put("payOrderId", json.get("payOrderId"));
+				param.put("personPhone", json.get("personPhone"));
+				param.put("orderState", json.get("orderState"));
+				param.put("orderTime", json.get("orderTime"));
+			}
+			res = adminOrderService.findOrderAppList(param);
+		} catch (Exception e) {
+			res.putStatus(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		return res;
+	}
+	
+	
+	@InitBinder
+	public void initBinder(WebDataBinder binder){
+		DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+		binder.registerCustomEditor(Date.class, new CustomDateEditor(format,true));
+	}
+	
+
+	/* ===============================权限================================== */
+	@SuppressWarnings("unchecked")
+	public Map<String, String> getHC(){
+		Subject currentUser = SecurityUtils.getSubject();  //shiro管理的session
+		Session session = currentUser.getSession();
+		return (Map<String, String>)session.getAttribute(Const.SESSION_QX);
+	}
+	/* ===============================权限================================== */
+
+}

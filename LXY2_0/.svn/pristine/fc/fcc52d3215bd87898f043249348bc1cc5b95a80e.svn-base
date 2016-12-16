@@ -1,0 +1,461 @@
+package com.lx.controller.system.lxy;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.session.Session;
+import org.apache.shiro.subject.Subject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.propertyeditors.CustomDateEditor;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.lx.controller.base.BaseController;
+import com.lx.entity.home.City;
+import com.lx.service.app.AddressService;
+import com.lx.service.app.DefaultRouteManagerService;
+import com.lx.service.app.DistanceService;
+import com.lx.util.Const;
+import com.lx.util.HString;
+import com.lx.util.Jurisdiction;
+import com.lx.util.PageData;
+import com.lx.util.XConst;
+
+/** 
+ * 类名称：
+ * 创建人 
+ * 创建时间：
+ */
+@Controller
+@RequestMapping(value="admin/lxy/default_route")
+public class AdminDefaultRouteManagerController extends BaseController {
+	
+	String menuUrl = "admin/lxy/default_route/list.do"; //菜单地址(权限用)
+	
+	@Autowired
+	private DefaultRouteManagerService routeService;
+	
+	@Autowired
+	private AddressService addService;
+	
+	@Autowired
+	private DistanceService distanceService;
+	
+	/**
+	 * 新增
+	 */
+	@RequestMapping(value="/save")
+	@ResponseBody
+	public PageData save() throws Exception{
+		logBefore(logger, "新增默认路线");
+		if(!Jurisdiction.buttonJurisdiction(menuUrl, "add")){return null;} //校验权限
+		PageData res = new PageData();
+		PageData pd = this.getPageData();
+		
+		String routeIds = pd.getString("jsonData");
+		pd.put("routeIds", routeIds);
+		routeService.addDefaultRoute(pd);
+		res.putStatus(XConst.SUCCESS);
+		
+		return res;
+	}
+	
+	/**
+	 * 删除
+	 */
+	@RequestMapping(value="/delete")
+	@ResponseBody
+	public PageData delete(){
+		logBefore(logger, "删除默认路线");
+		if(!Jurisdiction.buttonJurisdiction(menuUrl, "del")){return null;} //校验权限
+		PageData res = new PageData();
+		try{
+			PageData pd = this.getPageData();
+			routeService.deleteDefaultRoute(pd);
+			
+			res.putStatus(XConst.SUCCESS);
+		} catch(Exception e){
+			res.putStatus(XConst.EXCEPTION);
+			logger.error(e.toString(), e);
+		}
+		
+		return res;
+	}
+	
+	/**
+	 * 修改
+	 */
+	@RequestMapping(value="/edit")
+	public ModelAndView edit() throws Exception{
+		logBefore(logger, "修改默认路线");
+		if(!Jurisdiction.buttonJurisdiction(menuUrl, "edit")){return null;} //校验权限
+		ModelAndView mv = this.getModelAndView();
+		PageData pd = new PageData();
+		pd = this.getPageData();
+		routeService.updateDefaultRoute(pd);
+		mv.addObject("msg","success");
+		mv.setViewName("save_result");
+		return mv;
+	}
+	
+	/**
+	 * 修噶
+	 */
+	@RequestMapping(value="/update")
+	@ResponseBody
+	public PageData update() throws Exception{
+		logBefore(logger, "新增默认路线");
+		if(!Jurisdiction.buttonJurisdiction(menuUrl, "edit")){return null;} //校验权限
+		PageData res = new PageData();
+		PageData pd = this.getPageData();
+		
+		String routeIds = pd.getString("jsonData");
+		pd.put("routeIds", routeIds);
+		routeService.updateDefaultRoute(pd);
+		res.putStatus(XConst.SUCCESS);
+		
+		return res;
+	}
+	
+	@RequestMapping(value = "/listdata")
+	@ResponseBody
+	public PageData listdata() {
+		PageData res = new PageData();
+		try {
+			PageData param = getSysPageData();
+			String search = param.getString("search[value]");
+			Integer orderColumn = param.getInt("order[0][column]");
+			String sortOrder = param.getString("order[0][dir]");
+			
+			if(!HString.isEmpty(sortOrder)){
+				param.put("sortOrder",sortOrder );
+			}
+			
+			if(orderColumn != null){
+				String orderColumnName = param.getString("columns["+orderColumn+"][data]");
+				param.put("orderColumnName", orderColumnName);
+			}
+			
+			if (!HString.isEmpty(search)) {
+				JSONObject json = JSON.parseObject(search);
+				param.put("routeName", json.get("routeName"));
+				param.put("dayNum", json.get("dayNum"));
+			}
+			res = routeService.findAdminDefaultRouteList(param);
+		} catch (Exception e) {
+			res.putStatus(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		return res;
+	}
+	/**
+	 * 列表
+	 */
+	@RequestMapping(value="/list")
+	public ModelAndView list(){
+		logBefore(logger, "列表默认路线");
+		ModelAndView mv = this.getModelAndView();
+		PageData pd = new PageData();
+		try{
+			pd = this.getPageData();
+			String KEYWORD = pd.getString("KEYWORD");
+			if(null != KEYWORD && !"".equals(KEYWORD)){
+				pd.put("KEYWORD", KEYWORD.trim());
+			}
+			
+			mv.setViewName("system/lxy/route/default_route_list");
+			mv.addObject("pd", pd);
+			mv.addObject(Const.SESSION_QX,this.getHC());	//按钮权限
+		} catch(Exception e){
+			logger.error(e.toString(), e);
+		}
+		return mv;
+	}
+	
+	/**
+	 * 去新增页面
+	 */
+	@RequestMapping(value="/goAdd")
+	public ModelAndView goAdd(){
+		logBefore(logger, "增加线路");
+		ModelAndView mv = this.getModelAndView();
+		PageData pd = new PageData();
+		pd = this.getPageData();
+		try {
+			List<City> cityList=addService.getAllCities();
+			for(int i=0; i<cityList.size();i++){
+				System.out.println("------lgq-----------name="+cityList.get(i).getCityName());
+			}
+			mv.addObject("cityList", cityList);
+			
+			PageData param = super.getApiPageData();
+			mv.addObject("dayNum", param.getLong("dayNum"));
+			mv.addObject("routeName", param.getString("routeName"));
+			
+			mv.setViewName("system/lxy/route/default_route_edit");
+			mv.addObject("msg", "save");
+			mv.addObject("pd", pd);
+		} catch (Exception e) {
+			logger.error(e.toString(), e);
+		}						
+		return mv;
+	}
+
+	
+	/**
+	 * 公里数修改
+	 * @param id
+	 * @return
+	 */
+	@RequestMapping(value="editKM",produces=XConst.JSON_PRODUCES)
+	@ResponseBody
+	public PageData editKM(){
+		PageData param=getPageData();
+		try {
+			routeService.updateDefaultRouteKM(param);
+			
+			param.putStatus(XConst.SUCCESS);
+
+		} catch (Exception e) {
+			param.putStatus(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		return param;
+	}
+	
+	@RequestMapping("editUI/{id}")
+	public ModelAndView detailPage(@PathVariable Long id) throws Exception{
+		ModelAndView mav = new ModelAndView("system/lxy/route/editUI");
+		
+		List<City> cityList=addService.getAllCities();
+		for(int i=0; i<cityList.size();i++){
+			System.out.println("------lgq-----------name="+cityList.get(i).getCityName());
+		}
+		mav.addObject("cityList", cityList);
+		
+		
+		PageData pd = new PageData();
+		pd.put("id", id);
+		PageData routeBaseInfo = routeService.getDefaultRouteById(pd);
+		
+		mav.addObject("routeBaseInfo",routeBaseInfo);
+		//2.1. 查出路线详情
+		JSONArray distanceIds = JSONArray.parseArray(routeBaseInfo.getString("route_ids"));
+		List<PageData> distances = distanceService.getRouteInfoByIdList(distanceIds);
+		
+		//2.1.1 数据经组装后再传到前端
+		List<List<PageData>> routeInfo = new ArrayList<List<PageData>>();
+		
+		for(int i=0;i<distanceIds.size();i++){
+			
+			//distanceIds 这个数组有多少个元素，就有多少天，就有多少个List<PageData>
+			List<PageData> dayDistances= new ArrayList<PageData>(); 
+			
+			//每次循环找出一天的所有distance,通过遍历从数据库查出的distances找
+			for(PageData distance : distances){
+				
+				//当数据库查出来的day列的值 = 当前天的序数时，那么该记录（distance）就是当前天的
+				if(distance.getInt("day")==i+1){
+					
+					dayDistances.add(distance);
+					
+				}
+			
+			}
+			routeInfo.add(dayDistances);
+			
+		}
+		
+		System.out.print("------detailPage--------routeInfo="+routeInfo);
+		
+		//组装完毕，组装结果是List<List<PageData>>  routeInfo,将此数据传到前端
+		mav.addObject("routeInfo", routeInfo);
+		return mav;
+	}
+	
+	/**
+	 * 去修改页面
+	 */
+/*	@RequestMapping(value="/goEdit")
+	public ModelAndView goEdit(){
+		logBefore(logger, "去修改Imgmsg页面");
+		ModelAndView mv = this.getModelAndView();
+		PageData pd = new PageData();
+		pd = this.getPageData();
+		try {
+			List<City> cityList=addService.getAllCities();
+			for(int i=0; i<cityList.size();i++){
+				System.out.println("------lgq-----------name="+cityList.get(i).getCityName());
+			}
+			mv.addObject("cityList", cityList);
+			pd = imgmsgService.findById(pd);	//根据ID读取
+			mv.setViewName("weixin/imgmsg/imgmsg_edit");
+			mv.addObject("msg", "edit");
+			mv.addObject("pd", pd);
+		} catch (Exception e) {
+			logger.error(e.toString(), e);
+		}						
+		return mv;
+	}*/	
+	
+	/**
+	 * 批量删除
+	 *//*
+	@RequestMapping(value="/deleteAll")
+	@ResponseBody
+	public Object deleteAll() {
+		logBefore(logger, "批量删除Imgmsg");
+		if(!Jurisdiction.buttonJurisdiction(menuUrl, "dell")){return null;} //校验权限
+		PageData pd = new PageData();		
+		Map<String,Object> map = new HashMap<String,Object>();
+		try {
+			pd = this.getPageData();
+			List<PageData> pdList = new ArrayList<PageData>();
+			String DATA_IDS = pd.getString("DATA_IDS");
+			if(null != DATA_IDS && !"".equals(DATA_IDS)){
+				String ArrayDATA_IDS[] = DATA_IDS.split(",");
+				imgmsgService.deleteAll(ArrayDATA_IDS);
+				pd.put("msg", "ok");
+			}else{
+				pd.put("msg", "no");
+			}
+			pdList.add(pd);
+			map.put("list", pdList);
+		} catch (Exception e) {
+			logger.error(e.toString(), e);
+		} finally {
+			logAfter(logger);
+		}
+		return AppUtil.returnObject(pd, map);
+	}*/
+	
+	/*
+	 * 导出到excel
+	 * @return
+	 */
+	/*@RequestMapping(value="/excel")
+	public ModelAndView exportExcel(){
+		logBefore(logger, "导出Imgmsg到excel");
+		if(!Jurisdiction.buttonJurisdiction(menuUrl, "cha")){return null;}
+		ModelAndView mv = new ModelAndView();
+		PageData pd = new PageData();
+		pd = this.getPageData();
+		try{
+			Map<String,Object> dataMap = new HashMap<String,Object>();
+			List<String> titles = new ArrayList<String>();
+			titles.add("关键词");	//1
+			titles.add("创建时间");	//2
+			titles.add("状态");	//3
+			titles.add("备注");	//4
+			titles.add("标题1");	//5
+			titles.add("描述1");	//6
+			titles.add("图片地址1");	//7
+			titles.add("超链接1");	//8
+			titles.add("标题2");	//9
+			titles.add("描述2");	//10
+			titles.add("图片地址2");	//11
+			titles.add("超链接2");	//12
+			titles.add("标题3");	//13
+			titles.add("描述3");	//14
+			titles.add("图片地址3");	//15
+			titles.add("超链接3");	//16
+			titles.add("标题4");	//17
+			titles.add("描述4");	//18
+			titles.add("图片地址4");	//19
+			titles.add("超链接4");	//20
+			titles.add("标题5");	//21
+			titles.add("描述5");	//22
+			titles.add("图片地址5");	//23
+			titles.add("超链接5");	//24
+			titles.add("标题6");	//25
+			titles.add("描述6");	//26
+			titles.add("图片地址6");	//27
+			titles.add("超链接6");	//28
+			titles.add("标题7");	//29
+			titles.add("描述7");	//30
+			titles.add("图片地址7");	//31
+			titles.add("超链接7");	//32
+			titles.add("标题8");	//33
+			titles.add("描述8");	//34
+			titles.add("图片地址8");	//35
+			titles.add("超链接8");	//36
+			dataMap.put("titles", titles);
+			List<PageData> varOList = imgmsgService.listAll(pd);
+			List<PageData> varList = new ArrayList<PageData>();
+			for(int i=0;i<varOList.size();i++){
+				PageData vpd = new PageData();
+				vpd.put("var1", varOList.get(i).getString("KEYWORD"));	//1
+				vpd.put("var2", varOList.get(i).getString("CREATETIME"));	//2
+				vpd.put("var3", varOList.get(i).get("STATUS").toString());	//3
+				vpd.put("var4", varOList.get(i).getString("BZ"));	//4
+				vpd.put("var5", varOList.get(i).getString("TITLE1"));	//5
+				vpd.put("var6", varOList.get(i).getString("DESCRIPTION1"));	//6
+				vpd.put("var7", varOList.get(i).getString("IMGURL1"));	//7
+				vpd.put("var8", varOList.get(i).getString("TOURL1"));	//8
+				vpd.put("var9", varOList.get(i).getString("TITLE2"));	//9
+				vpd.put("var10", varOList.get(i).getString("DESCRIPTION2"));	//10
+				vpd.put("var11", varOList.get(i).getString("IMGURL2"));	//11
+				vpd.put("var12", varOList.get(i).getString("TOURL2"));	//12
+				vpd.put("var13", varOList.get(i).getString("TITLE3"));	//13
+				vpd.put("var14", varOList.get(i).getString("DESCRIPTION3"));	//14
+				vpd.put("var15", varOList.get(i).getString("IMGURL3"));	//15
+				vpd.put("var16", varOList.get(i).getString("TOURL3"));	//16
+				vpd.put("var17", varOList.get(i).getString("TITLE4"));	//17
+				vpd.put("var18", varOList.get(i).getString("DESCRIPTION4"));	//18
+				vpd.put("var19", varOList.get(i).getString("IMGURL4"));	//19
+				vpd.put("var20", varOList.get(i).getString("TOURL4"));	//20
+				vpd.put("var21", varOList.get(i).getString("TITLE5"));	//21
+				vpd.put("var22", varOList.get(i).getString("DESCRIPTION5"));	//22
+				vpd.put("var23", varOList.get(i).getString("IMGURL5"));	//23
+				vpd.put("var24", varOList.get(i).getString("TOURL5"));	//24
+				vpd.put("var25", varOList.get(i).getString("TITLE6"));	//25
+				vpd.put("var26", varOList.get(i).getString("DESCRIPTION6"));	//26
+				vpd.put("var27", varOList.get(i).getString("IMGURL6"));	//27
+				vpd.put("var28", varOList.get(i).getString("TOURL6"));	//28
+				vpd.put("var29", varOList.get(i).getString("TITLE7"));	//29
+				vpd.put("var30", varOList.get(i).getString("DESCRIPTION7"));	//30
+				vpd.put("var31", varOList.get(i).getString("IMGURL7"));	//31
+				vpd.put("var32", varOList.get(i).getString("TOURL7"));	//32
+				vpd.put("var33", varOList.get(i).getString("TITLE8"));	//33
+				vpd.put("var34", varOList.get(i).getString("DESCRIPTION8"));	//34
+				vpd.put("var35", varOList.get(i).getString("IMGURL8"));	//35
+				vpd.put("var36", varOList.get(i).getString("TOURL8"));	//36
+				varList.add(vpd);
+			}
+			dataMap.put("varList", varList);
+			ObjectExcelView erv = new ObjectExcelView();
+			mv = new ModelAndView(erv,dataMap);
+		} catch(Exception e){
+			logger.error(e.toString(), e);
+		}
+		return mv;
+	}*/
+	
+	/* ===============================权限================================== */
+	@SuppressWarnings("unchecked")
+	public Map<String, String> getHC(){
+		Subject currentUser = SecurityUtils.getSubject();  //shiro管理的session
+		Session session = currentUser.getSession();
+		return (Map<String, String>)session.getAttribute(Const.SESSION_QX);
+	}
+	/* ===============================权限================================== */
+	
+	@InitBinder
+	public void initBinder(WebDataBinder binder){
+		DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+		binder.registerCustomEditor(Date.class, new CustomDateEditor(format,true));
+	}
+}

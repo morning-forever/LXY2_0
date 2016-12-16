@@ -1,0 +1,29 @@
+@CHARSET "UTF-8";
+
+/* 分页按钮 start */
+[class^="icon-"]:before, [class*=" icon-"]:before {
+	height: 20px;
+    line-height: 20px;
+    text-decoration: inherit;
+    display: inline-block;
+    speak: none;
+}
+
+.dataTables_filter {
+   display: none;
+}
+
+/* 分页按钮  end*/
+
+.select_table td{
+	text-align: right;
+	padding-right: 20px;
+}
+
+#table_report thead tr th {
+    text-align: center;
+}
+
+#table_report tbody tr td {
+    text-align: center;
+}

@@ -1,0 +1,130 @@
+@CHARSET "UTF-8";  
+#content-wrap{
+	width: 800px;
+	margin:0 auto;
+	border: 1px solid #dbdbdb;
+}
+
+#headline{
+	margin-top:20px;
+	height:55px;
+	background-color: #fbe7af;
+	line-height: 55px;
+}
+#money-label{
+	color: #2e2d2e;
+	font-size: 16px;
+	margin-left: 30px;
+}
+
+#main-part{
+	width:800px;
+	background-color: #f7f6ef;
+	margin: 50px auto;
+	padding-top:80px;
+	padding-bottom: 80px;
+	border-radius:10px;
+}
+
+.option{
+	width:290px;
+	margin-left:auto;
+	margin-right:auto;
+	
+}
+.icon{
+	background-image: url(../images/payment-icon.png);
+}
+.alipay{
+	background-position: -88px -66px;
+	width:245px;
+	height:53px;
+	display: inline-block;
+	vertical-align: middle;
+}
+.wxpay{
+	background-position: -88px -176px;
+	width:245px;
+	height:71px;
+	display: inline-block;
+	vertical-align: middle;
+}
+
+.selected{
+	background-position: -99px -297px;
+	width:37px;
+	height:37px;
+	display:none;
+	vertical-align: middle;
+}
+#option-prompt{
+	display: inline-block;
+	color: #afafac;
+	width:100%;
+	text-align: center;
+	font-size:16px;
+}
+#guide{
+	width:800px;
+	margin: 0 auto;
+	height:60px;
+}
+#pay-button{
+	display: inline-block;
+	background-color: #ffb325;
+	width: 100px;
+	color: white;
+	text-align: center;
+	height:40px;
+	vertical-align: middle;
+	line-height: 40px;
+	font-size: 20px;
+	margin-left: 30px;
+	border-radius:8px;
+	cursor: pointer;
+}
+
+
+
+.content_wrap{
+	width: 800px;
+	/* margin:0 auto; */
+	padding:50px 50px;
+	border-bottom: 1px solid #dbdbdb;
+}
+
+.content_wrap .content{
+	position: relative;
+}
+
+.content_wrap .content .right{
+	position: absolute;
+	left:150px;
+	top:20px;
+}
+
+.content_wrap .content .right p{
+	font-size:40px;
+	color:#FF1C24;
+}
+
+.content_wrap .content .down-part{
+	margin-top: 30px;
+}
+
+.content_wrap .content .down-part td{
+	padding-left:25px;
+}
+
+input[type="button"] {
+    width: 100px;
+    margin: 5% 10%;
+    border: none;
+    background-color: #FC605A;
+    font-size: 1.6em;
+    color: #fff;
+    padding: 4% 0;
+    border-radius: 0.2em;
+    cursor: pointer;
+}
+

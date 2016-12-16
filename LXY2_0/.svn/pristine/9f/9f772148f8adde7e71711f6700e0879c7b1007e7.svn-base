@@ -1,0 +1,230 @@
+package com.lx.controller.system.lxy;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.lx.controller.base.BaseController;
+import com.lx.entity.home.Area;
+import com.lx.entity.home.City;
+import com.lx.entity.home.Country;
+import com.lx.service.system.lxy.AdminRouteService;
+import com.lx.util.HString;
+import com.lx.util.PageData;
+import com.lx.util.XConst;
+
+/** 
+ * 类名称：
+ * 创建人 
+ * 创建时间：
+ */
+@Controller
+@RequestMapping(value="admin/lxy/route")
+public class AdminRouteController extends BaseController {
+	
+	
+	@Autowired
+	private AdminRouteService adminRouteService;
+	
+	
+	
+	//市县景点页面
+	@RequestMapping("address_list")
+	public ModelAndView addressList() throws Exception {
+		ModelAndView mav = new ModelAndView();
+		mav.setViewName("system/lxy/route/address_list");
+		List<City> city = adminRouteService.getAllCities();//获得所有市
+		mav.addObject("city", city);
+		return mav;
+	}
+	
+	
+	
+	/**
+	 *查询市县景点
+	 */
+	@RequestMapping(value = "address_manage")
+	@ResponseBody
+	public PageData DistanceManageList() {
+		PageData res = new PageData();
+			PageData param = getSysPageData();
+			String search = param.getString("search[value]");
+			if(!HString.isEmpty(search)){
+				JSONObject json = JSON.parseObject(search);
+				param.put("cityName", json.get("cityName"));
+				param.put("areaName", json.get("areaName"));
+				param.put("countryName", json.get("countryName"));
+			}
+				try {
+					res = adminRouteService.findAddressManage(param);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			return res;
+	}
+	
+	//添加城市
+	@RequestMapping(value = "addCity")
+	@ResponseBody
+	public PageData addCity() throws Exception{
+		PageData res = new PageData();
+		PageData param = this.getPageData();
+		adminRouteService.addCity(param);
+		res.putStatus(XConst.SUCCESS);
+		return res;
+	}
+	
+	//添加县
+	@RequestMapping(value = "addArea")
+	@ResponseBody
+	public PageData addArea() throws Exception{
+		PageData res = new PageData();
+		PageData param = this.getPageData();
+		adminRouteService.addArea(param);
+		res.putStatus(XConst.SUCCESS);
+		return res;
+	}
+	
+
+	//添加景点
+	@RequestMapping(value = "addCountry")
+	@ResponseBody
+	public PageData addCountry() throws Exception{
+		PageData res = new PageData();
+		PageData param = this.getPageData();
+		adminRouteService.addCountry(param);
+		res.putStatus(XConst.SUCCESS);
+		return res;
+	}
+	
+	//修改市
+	@RequestMapping(value = "updataCity")
+	@ResponseBody
+	public PageData updataCity() throws Exception{
+		PageData res = new PageData();
+		PageData param = getPageData();
+		adminRouteService.updataCity(param);
+		res.putStatus(XConst.SUCCESS);
+		return res;
+	}
+	
+	//修改县
+	@RequestMapping(value = "updataArea")
+	@ResponseBody
+	public PageData updataArea() throws Exception{
+		PageData res = new PageData();
+		PageData param = getPageData();
+		adminRouteService.updataArea(param);
+		res.putStatus(XConst.SUCCESS);
+		return res;
+	}
+	
+	//修改景点
+	@RequestMapping(value = "updataCountry")
+	@ResponseBody
+	public PageData updataCountry() throws Exception{
+		PageData res = new PageData();
+		PageData param = getPageData();
+		adminRouteService.updataCountry(param);
+		res.putStatus(XConst.SUCCESS);
+		return res;
+	}
+	
+	//删除景点
+	@RequestMapping(value = "deleteCountry")
+	@ResponseBody
+	public PageData deleteCountry() throws Exception{
+		PageData res = new PageData();
+		PageData param = this.getPageData();
+		adminRouteService.deleteCountry(param);
+		res.putStatus(XConst.SUCCESS);
+		return res;
+	}
+	
+	//获得所有县
+	@RequestMapping(value="getAreas/{cityId}",produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public PageData getAreas(@PathVariable String cityId) throws Exception{
+		
+		PageData map=new PageData();
+		try {
+			List<Area> areasList=adminRouteService.getAreasByCityId(cityId);
+			map.put("areasList", areasList);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return map;
+	}
+	
+	//获得所有景点
+	@RequestMapping(value="getCountries/{areaId}",produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public PageData getCountry(@PathVariable String areaId) throws Exception{
+		PageData map=new PageData();
+		try {
+			List<Country> countryList=adminRouteService.getCountriesByAreaId(areaId);
+			map.put("countryList", countryList);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return map;	
+	}
+	
+	
+	//里程页面
+	@RequestMapping("distance_list")
+	public ModelAndView distanceList() throws Exception {
+		ModelAndView mav = new ModelAndView();
+		mav.setViewName("system/lxy/route/distance_list");
+		List<City> city = adminRouteService.getAllCities();
+		mav.addObject("city", city);
+		return mav;
+	}
+	
+	/**
+	 * 获取里程列表
+	 * @return
+	 */
+	@RequestMapping(value = "distance_manage")
+	@ResponseBody
+	public PageData listData() {
+		PageData res = new PageData();
+	
+			System.out.println("----------listdata----------");
+			PageData param = getSysPageData();
+			String search = param.getString("search[value]");
+			if(!HString.isEmpty(search)){
+				JSONObject json = JSON.parseObject(search);
+				param.put("startAddress", json.get("startAddId"));
+				param.put("endAddress", json.get("endAddId"));
+				param.put("distance", json.get("distance"));
+				param.put("addKm", json.get("addKm"));
+				param.put("addMuch", json.get("addMuch"));
+			}
+				try {
+					res = adminRouteService.findDistanceList(param);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			
+			return res;
+	}
+	
+	//修改里程公里
+	@RequestMapping(value = "updataDistance")
+	@ResponseBody
+	public PageData updataDistance() throws Exception{
+		PageData res = new PageData();
+		PageData param = getPageData();
+		res = adminRouteService.updataDistance(param);
+		return res;
+	}
+
+}

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="OrderItemMapper">
+	<insert id="insertOrderItem" useGeneratedKeys="true" keyProperty="orderItemId">
+		insert into lxy_order_item
+		(create_time, name,total_km, price, down_payment, pay_method, start_time, end_time, person_name, person_phone,car_ids, additional_charges_ids,ac_other, route_ids, form_id)
+		values
+		(NOW(), #{name},
+		<if test="totalKm == null || totalKm == '' ">
+			0
+		</if>
+		<if test="totalKm != null and totalKm != '' ">
+			#{totalKm}
+		</if>
+		,
+		 <if test="price == null || price == '' ">
+		 	 0.00
+		 </if>
+		 <if test="price !=null and price != '' ">
+		 	#{price}
+		 </if>
+		 , 
+		 <if test="downPayment !=null and downPayment !='' ">
+		 	#{downPayment}
+		 </if>
+		 <if test="downPayment ==null || downPayment ==''">
+		 	0.00
+		 </if>
+		 , #{payMethod}, #{startTime}, #{endTime}, #{personName}, #{personPhone}, #{carStateIds},#{addChargesIds} ,#{acOther}, #{distanceIds}, #{orderFormId})
+	</insert>
+
+</mapper>

@@ -1,0 +1,43 @@
+package com.lx.controller.app.mobile;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.lx.service.app.AddSvcService;
+import com.lx.util.PageData;
+import com.lx.util.XConst;
+
+@Controller("mobileAddChController")
+@RequestMapping("mobile/add_ch")
+public class AdditionalChargeController {
+	
+	@Resource
+	private AddSvcService addChService;
+	/**
+	 * 获取附加体验的list
+	 * @return
+	 */
+	@RequestMapping("getlist")
+	@ResponseBody
+	public PageData getAddChs(){
+		PageData res = new PageData();
+		try {
+			
+			List<PageData> addChs = addChService.getAdditionalCharges();
+			res.putMessage(XConst.SUCCESS);
+			res.put("addChs", addChs);
+		
+		} catch (Exception e) {
+			res.putMessage(XConst.FAIL);
+			e.printStackTrace();
+		}
+		
+		return res;
+	}
+	
+}

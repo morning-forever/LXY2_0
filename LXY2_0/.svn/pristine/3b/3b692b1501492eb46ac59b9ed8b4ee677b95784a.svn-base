@@ -1,0 +1,63 @@
+package com.lx.service.app;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.lx.dao.DaoSupport;
+import com.lx.util.PageData;
+
+
+
+
+
+@Service
+@Transactional
+@SuppressWarnings("unchecked")
+public class DistanceService {
+	
+	@Resource
+	private DaoSupport dao;
+	
+	//查询从A到B的里程数
+	public PageData getDistance(String startAddId, String endAddId) throws Exception {
+		PageData pd = new PageData();
+		pd.put("startAddId", startAddId);
+		pd.put("endAddId", endAddId);
+		
+		return  (PageData) dao.findForObject("DistanceMapper.getDistance",pd );
+	}
+	
+	//添加A到B的距离
+	public Integer addA2BDistance(String startAddId, String endAddId) throws Exception {
+		PageData pd = new PageData();
+		pd.put("startAddId", startAddId);
+		pd.put("endAddId", endAddId);
+		pd.put("distance", 0);
+		
+		return  (Integer) dao.save("DistanceMapper.addA2BDistance",pd);
+	}
+	
+	public List<PageData> getRouteInfoByIds(String ids) throws Exception{
+		PageData pd = new PageData();
+		pd.put("distanceIds", ids);
+		return (List<PageData>) dao.findForList("DistanceMapper.getRouteInfoByIds",pd);
+	}
+	
+	public List<PageData> getDtlDstList(List<List<PageData>> param) throws Exception{
+		
+		List<PageData> dtlDstList = (List<PageData>) dao.findForList("DistanceMapper.getDtlDstList", param);
+		
+		return dtlDstList;
+	}
+	
+	public List<PageData> getRouteInfoByIdList(Object param) throws Exception{
+		
+		List<PageData> dtlDstList = (List<PageData>) dao.findForList("DistanceMapper.getRouteInfoByIdList", param);
+		
+		return dtlDstList;
+	}
+}

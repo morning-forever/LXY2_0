@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AdminOrderMapper">
+
+<!-- 查询订单列表信息 -->
+	<select id="findOrderList" resultType="pd">
+		select lof.id,lof.create_time as createTime,
+		lof.order_code as orderCode,lof.group_no as groupNo,
+		lof.pay_method as payMethod,lof.pay_order_id as payOrderId,
+		sau.USERNAME,lof.contact_person as contactPerson,lof.contact_number as contactNumber,
+		lof.km,lof.price,
+		lof.current_state as orderState,su.`NAME` as assessor from 	lxy_order_form lof 
+		left JOIN  sys_app_user sau ON lof.user_id = sau.USER_ID
+		LEFT JOIN sys_user su ON su.USER_ID = lof.assessor
+		where lof.is_valid = 1    
+		<if test=" nickName != null and nickName !='' ">
+			AND sau.`USERNAME` like CONCAT('%', #{nickName},'%')
+		</if>
+		<if test=" orderCode != null and orderCode !='' ">
+			and lof.order_code  = #{orderCode}
+		</if>
+		<if test=" payOrderId != null and payOrderId !='' ">
+			and lof.pay_order_id  = #{payOrderId}
+		</if>
+		<if test=" personPhone != null and personPhone !='' ">
+			and lof.contact_number  = #{personPhone}
+		</if>
+		<if test=" orderState != null and orderState !='' ">
+			and lof.`order_state`  = #{orderState}
+		</if>
+		<if test=" orderTime != null and orderTime !='' ">
+			and DATE_FORMAT(lof.`create_time`, '%Y-%m-%d')  = str_to_date(#{orderTime} , '%Y-%m-%d') 
+		</if>
+		ORDER BY lof.create_time DESC
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select>
+	
+	<!--订单总数  -->
+	<select id="findOrderListCount" resultType="Integer">
+		select count(*) from (select lof.id,lof.create_time as createTime,
+		lof.order_code as orderCode,lof.group_no as groupNo,
+		lof.pay_method as payMethod,lof.pay_order_id as payOrderId,
+		sau.USERNAME,lof.contact_person as contactPerson,lof.contact_number as contactNumber,
+		lof.km,lof.price,
+		lof.current_state as orderState,su.`NAME` as assessor from 	lxy_order_form lof 
+		left JOIN  sys_app_user sau ON lof.user_id = sau.USER_ID
+		LEFT JOIN sys_user su ON su.USER_ID = lof.assessor
+	  
+		where lof.is_valid = 1    
+		<if test=" nickName != null and nickName !='' ">
+			AND sau.`USERNAME` like CONCAT('%', #{nickName},'%')
+		</if>
+		<if test=" orderCode != null and orderCode !='' ">
+			and lof.order_code  = #{orderCode}
+		</if>
+		<if test=" payOrderId != null and payOrderId !='' ">
+			and lof.pay_order_id  = #{payOrderId}
+		</if>
+		<if test=" personPhone != null and personPhone !='' ">
+			and su.`PHONE`  = #{personPhone}
+		</if>
+		<if test=" orderState != null and orderState !='' ">
+			and lof.`order_state`  = #{orderState}
+		</if>
+		<if test=" orderTime != null and orderTime !='' ">
+			and DATE_FORMAT(lof.`create_time`, '%Y-%m-%d')  = str_to_date(#{orderTime} , '%Y-%m-%d') 
+		</if>) t
+	</select>
+	
+	
+	<select id="getOrderById" parameterType="java.lang.Long" resultType="pd">
+		select lof.order_code as orderCode,lof.start_time as startTime,lof.end_time as endTime, ldr.content as defaultRoute,lof.user_defined_route as userDefinedRoute,ldr.km as defaultRouteKm,ljs.`name` as jtSite,lss.name as stSite, 
+			lof.km as orderFormKm,lof.price,
+			lof.contact_person as contactPerson,lof.contact_number as contactNumber,lof.create_time as createTime
+			from lxy_order_form  lof
+			LEFT JOIN lxy_default_route ldr ON lof.default_route_id = ldr.id
+			LEFT JOIN lxy_jst_site  ljs ON  lof.jt_site_id = ljs.id
+			LEFT JOIN lxy_jst_site  lss ON  lof.st_site_id = lss.id 
+ 			where lof.id = #{id}
+	</select>
+	
+	<!-- 获取退款列表 -->
+	<select id="findRefundList" resultType="pd">
+		SELECT 
+		  lof.id as orderId,
+		  lof.`order_code`,
+		  lof.`pay_order_id`,
+		  lof.`pay_method`,
+		  lof.`current_state` as order_state,
+		  
+		  lof.`price`,
+		  lof.price  AS downPayment,
+		  ldr.content as name,
+		  
+		  lor.`create_time`,
+		  lor.`person_name`,
+		  lor.`bank_name` AS bankName,
+		  lor.`bank_no`,
+		  lor.`finish_time`,
+		  lor.id as refundId,
+		  lor.is_check,
+		  lor.reason,
+		  
+		  su.`USER_ID` AS userId,
+		  su.`USERNAME` AS username,
+		  su.`NAME` AS realname,
+		  su.`PHONE` AS phone
+		  
+		FROM
+		  lxy_order_form lof 
+		  INNER JOIN lxy_order_refund lor 
+		  	ON lor.`form_id` = lof.`id`
+		  	AND lor.state = 'ADD'
+		  INNER JOIN sys_app_user su 
+		    ON su.`USER_ID` = lof.`user_id`
+		  LEFT JOIN lxy_default_route ldr ON lof.default_route_id = ldr.id
+		WHERE lof.`is_valid` = 1
+		
+		<if test=" name != null and name !='' ">
+			and su.`USERNAME` like CONCAT('%', #{name},'%')
+		</if>
+		<if test=" orderCode != null and orderCode !='' ">
+			and lof.order_code  = #{orderCode}
+		</if>
+		<if test=" payOrderId != null and payOrderId !='' ">
+			and lof.pay_order_id  = #{payOrderId}
+		</if>
+		<if test=" personPhone != null and personPhone !='' ">
+			and su.`PHONE`  = #{personPhone}
+		</if>
+		<if test=" orderState != null and orderState !='' ">
+			and lof.`current_state` in (${orderState})
+		</if>
+		<if test=" orderTime != null and orderTime !='' ">
+			and DATE_FORMAT(lof.`create_time`, '%Y-%m-%d')  = str_to_date(#{orderTime} , '%Y-%m-%d') 
+		</if>
+		
+		<if test=" showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select>
+	
+	
+	<select id="findRefundListCount" resultType="Integer">
+		SELECT 
+		  count(1)
+		FROM
+		  lxy_order_form lof 
+		  INNER JOIN lxy_order_refund lor 
+		  	ON lor.`form_id` = lof.`id`
+		  	AND lor.state = 'ADD'
+		  INNER JOIN sys_app_user su 
+		    ON su.`USER_ID` = lof.`user_id`
+		WHERE lof.`is_valid` = 1
+		
+		<if test=" name != null and name !='' ">
+			and su.`USERNAME` like CONCAT('%', #{name},'%')
+		</if>
+		<if test=" orderCode != null and orderCode !='' ">
+			and lof.order_code  = #{orderCode}
+		</if>
+		<if test=" payOrderId != null and payOrderId !='' ">
+			and lof.pay_order_id  = #{payOrderId}
+		</if>
+		<if test=" personPhone != null and personPhone !='' ">
+			and su.`PHONE`  = #{personPhone}
+		</if>
+		<if test=" orderState != null and orderState !='' ">
+			and lof.`current_state` in (${orderState})
+		</if>
+		<if test=" orderTime != null and orderTime !='' ">
+			and DATE_FORMAT(lof.`create_time`, '%Y-%m-%d')  = str_to_date(#{orderTime} , '%Y-%m-%d') 
+		</if>
+	</select>
+	
+	<!-- 检验是否可以退款 -->
+	<select id="checkExamine" resultType="Integer">
+		select count(1) from lxy_order_form where current_state = 'REFUNDING' and id = #{orderId}
+	</select>
+	
+	<!-- 更新审核状态为已审核 -->
+	<update id="updateCheck">
+		UPDATE 
+		  lxy_order_refund wor 
+		SET
+		  wor.`is_check` = 0
+		<!-- 如果退款完成，则修改退款完成时间 -->
+		<if test=" state != null and state !='' and state == 'REFUNDED' ">
+			, wor.`finish_time` = NOW() 
+		</if>
+		WHERE wor.`id` = #{refundId}
+		  AND wor.`is_check` = 1 
+	</update>
+	
+	<!-- 新增一条审核记录 -->
+	<insert id="addExamine">
+		insert into lxy_order_examine
+		(create_time, form_id, reason, result)
+		values
+		(NOW(), #{orderId}, #{reason}, #{result})
+	</insert>
+	
+	<select id="findRefundInfo" resultType="pd">
+		SELECT 
+		  su.`USER_ID` AS userId,
+		  su.`USERNAME` AS username,
+		  su.`NAME` AS realname,
+		  su.`PHONE` AS phone,
+		  
+		  lor.`reason` AS tkReason,
+		  lor.`person_name`,
+		  lor.`bank_name`,
+		  lor.`bank_no`, 
+		  lof.order_code
+		  
+		FROM
+		  lxy_order_refund lor 
+		  INNER JOIN lxy_order_form lof 
+		    ON lof.`id` = lor.`form_id` 
+		  INNER JOIN sys_app_user su 
+		    ON su.`USER_ID` = lof.`user_id`
+		WHERE lor.`form_id` = #{orderId}
+		  and lor.state = 'ADD'
+	</select>
+	
+	<select id="findExamineList" resultType="pd">
+		SELECT 
+		  woe.create_time,
+		  woe.reason,
+		  woe.result
+		FROM
+		  lxy_order_examine woe 
+		WHERE woe.form_id = #{orderId}
+		order by woe.create_time desc
+	</select> 
+	
+	<!--订单审核成功 ，更新订单状态，公里数和价格-->
+	<update id="checkSuccess" parameterType="pd">
+		update lxy_order_form SET last_state = 'CHECKING', current_state = 'WAITPAY',km =#{km},price = (select SUM(lct.price) from lxy_car_state lcs 
+			LEFT JOIN lxy_car_info lci ON lcs.car_id = lci.id 
+			LEFT JOIN lxy_car_type lct ON lct.id = lci.car_type_id
+			where lcs.form_id = #{orderId})*#{km},
+			
+			assessor = #{assessor}
+			
+		WHERE id=#{orderId}
+	</update>
+	
+	<!--订单审核备注成功，只需更新订单状态  -->
+	<update id="checkRemarkSuccess" parameterType="pd">
+		update lxy_order_form SET last_state = 'CHECKING', current_state = 'WAITPAY',assessor = #{assessor}
+			
+		WHERE id=#{orderId}
+	</update>
+	
+	<!--如果审核了路线，将订单的路线设为默认路线  -->
+	<update id="setDefRouId" parameterType="pd">
+		update lxy_order_form set default_route_id = #{defRouId},user_defined_route = null where id =#{orderId} 
+	</update>
+	<!--如果审核了接团地点，将订单的接团地点设为默认地点  -->
+	<update id="setJtSiteId" parameterType="pd">
+		update lxy_order_form set jt_site_id = #{jtSiteId},jt_site = null where id =#{orderId} 
+	</update>
+	<!--如果审核了送团地点，将订单的送团地点设为默认地点  -->
+	<update id="setStSiteId" parameterType="pd">
+		update lxy_order_form set st_site_id = #{stSiteId},st_site = null where id =#{orderId} 
+	</update>
+	<!--如果接团地点和送团地点一样  -->
+	<update id="setJstSiteId" parameterType="pd">
+		update lxy_order_form set jt_site_id=#{jstSiteId},st_site_id = #{jstSiteId},st_site = null where id =#{orderId} 
+	</update>
+	<!--订单审核成功end-->
+	
+	<!--订单审核不通过，更新订单状态，释放车辆，车辆出行次数回减-->
+	<update id="checkFail" parameterType="pd">
+		UPDATE lxy_order_form lof 
+
+		LEFT JOIN lxy_car_state lcs ON lof.id = lcs.form_id  
+		
+		LEFT JOIN lxy_car_info lci on lcs.car_id = lci.id
+		
+		 set 
+			lof.current_state = 'CHECKFAIL',lof.last_state='CHECKING',lof.assessor=#{assessor}, lof.fail_reason=#{failReason},
+			lcs.use_state = 'UNLOCKED',lci.trip_times = lci.trip_times-1
+		where lof.id=#{orderId}
+	</update>
+	<!--订单审核不通过end-->
+	
+	
+	
+	<update id="lgcDelById" parameterType="java.lang.Long">
+		UPDATE lxy_order_form SET is_valid = 0 where id = #{id}
+	</update>
+	
+	<!-- 旅行社老大查看订单列表 -->
+	
+	<select id="findOrderAppList" resultType="pd">
+		select lof.id,lof.create_time as createTime,
+		lof.order_code as orderCode,lof.group_no as groupNo,
+		lof.pay_method as payMethod,lof.pay_order_id as payOrderId,
+		sau.USERNAME,lof.contact_person as contactPerson,lof.contact_number as contactNumber,
+		lof.km,lof.price,
+		lof.current_state as orderState,su.`NAME` as assessor from 	lxy_order_form lof 
+		LEFT JOIN  sys_app_user sau ON lof.user_id = sau.USER_ID
+		LEFT JOIN sys_user su ON su.USER_ID = lof.assessor
+		LEFT JOIN sys_role AS sr on sau.ROLE_ID = sr.ROLE_ID
+		where lof.is_valid = 1   and sr.ROLE_NAME like CONCAT('%',#{name},'%') 
+		<if test=" nickName != null and nickName !='' ">
+			AND sau.`USERNAME` like CONCAT('%', #{nickName},'%')
+		</if>
+		<if test=" orderCode != null and orderCode !='' ">
+			and lof.order_code  = #{orderCode}
+		</if>
+		<if test=" payOrderId != null and payOrderId !='' ">
+			and lof.pay_order_id  = #{payOrderId}
+		</if>
+		<if test=" personPhone != null and personPhone !='' ">
+			and lof.contact_number  = #{personPhone}
+		</if>
+		<if test=" orderState != null and orderState !='' ">
+			and lof.`order_state`  = #{orderState}
+		</if>
+		<if test=" orderTime != null and orderTime !='' ">
+			and DATE_FORMAT(lof.`create_time`, '%Y-%m-%d')  = str_to_date(#{orderTime} , '%Y-%m-%d') 
+		</if>
+		ORDER BY lof.create_time DESC
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select>
+	
+	<!--订单总数  -->
+	<select id="findOrderAppListCount" resultType="Integer">
+		select count(*) from (select lof.id,lof.create_time as createTime,
+		lof.order_code as orderCode,lof.group_no as groupNo,
+		lof.pay_method as payMethod,lof.pay_order_id as payOrderId,
+		sau.USERNAME,lof.contact_person as contactPerson,lof.contact_number as contactNumber,
+		lof.km,lof.price,
+		lof.current_state as orderState,su.`NAME` as assessor from 	lxy_order_form lof 
+		left JOIN  sys_app_user sau ON lof.user_id = sau.USER_ID
+		LEFT JOIN sys_user su ON su.USER_ID = lof.assessor
+	  	LEFT JOIN sys_role AS sr on sau.ROLE_ID = sr.ROLE_ID
+		where lof.is_valid = 1    and sr.ROLE_NAME like CONCAT('%',#{name},'%') 
+		<if test=" nickName != null and nickName !='' ">
+			AND sau.`USERNAME` like CONCAT('%', #{nickName},'%')
+		</if>
+		<if test=" orderCode != null and orderCode !='' ">
+			and lof.order_code  = #{orderCode}
+		</if>
+		<if test=" payOrderId != null and payOrderId !='' ">
+			and lof.pay_order_id  = #{payOrderId}
+		</if>
+		<if test=" personPhone != null and personPhone !='' ">
+			and su.`PHONE`  = #{personPhone}
+		</if>
+		<if test=" orderState != null and orderState !='' ">
+			and lof.`order_state`  = #{orderState}
+		</if>
+		<if test=" orderTime != null and orderTime !='' ">
+			and DATE_FORMAT(lof.`create_time`, '%Y-%m-%d')  = str_to_date(#{orderTime} , '%Y-%m-%d') 
+		</if>) t
+	</select>
+	
+	<!--关闭下单超过半小时，但未成功支付的订单,同时释放相应车辆及回减车辆出行的次数  -->
+	<update id="closePayTimeOutOrder">
+		update lxy_order_form lof 
+			LEFT JOIN lxy_car_state lcs ON lof.id = lcs.form_id
+			LEFT JOIN lxy_car_info lci ON lcs.car_id = lci.id
+			SET lof.current_state = 'CLOSED', lcs.use_state='UNLOCKED',lci.trip_times = lci.trip_times-1
+
+		where (DATE_ADD(lof.create_time,INTERVAL 30 MINUTE)&lt;NOW() AND lof.current_state = 'WAITPAY' and lof.last_state = null) 
+				OR 
+				<!--审核通过，超过24小时  -->
+			  (DATE_ADD(lof.update_time,INTERVAL 24*60 MINUTE)&lt;NOW() and lof.current_state='WAITPAY' and lof.last_state='CHECKING')
+	</update>
+	
+	<!-- 锁车超过10分钟，但未提交订单的，将车辆释放掉 -->
+	<update id="freeCarsTimeout10">
+			UPDATE lxy_car_state lcs LEFT JOIN lxy_car_info lci ON lcs.car_id = lci.id
+				
+				SET lcs.use_state = 'UNLOCKED',lci.trip_times = lci.trip_times -1 
+			WHERE DATE_ADD(lcs.create_time,INTERVAL 10 MINUTE) &lt; NOW() AND ISNULL(lcs.form_id)
+	</update>
+	
+</mapper>

@@ -1,0 +1,467 @@
+<%@ page language="java" import="java.util.*" pageEncoding="UTF-8"%>
+<%
+	String path = request.getContextPath();
+	String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
+%>
+
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta content="text/html">
+<base href="<%=basePath%>">
+<meta name="renderer" content="webkit|ie-comp|ie-stand">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+<!--[if lt IE 9]>
+<script type="text/javascript" src="static/h-ui-lib/html5.js"></script>
+<script type="text/javascript" src="static/h-ui-lib/respond.min.js"></script>
+<script type="text/javascript" src="static/h-ui-lib/PIE_IE678.js"></script>
+<![endif]-->
+<link rel="stylesheet" type="text/css" href="static/h-ui/css/H-ui.css" />
+<link rel="stylesheet" type="text/css" href="static/h-ui-lib/Hui-iconfont/1.0.7/iconfont.css" />
+<link rel="stylesheet" type="text/css" href="static/h-ui-lib/icheck/icheck.css" />
+<link rel="stylesheet" type="text/css" href="static/css/jquery.datetimepicker.css"/>
+<link rel="stylesheet" type="text/css" href="static/app/pc/css/style2.0.css"/>
+
+<!--[if lt IE 9]>
+<link href="static/h-ui/css/H-ui.ie.css" rel="stylesheet" type="text/css" />
+<![endif]-->
+<!--[if IE 6]>
+<script type="text/javascript" src="static/h-ui-lib/DD_belatedPNG_0.0.8a-min.js" ></script>
+<script>DD_belatedPNG.fix('*');</script>
+<![endif]-->
+<title>预定车辆</title>
+<meta name="keywords" content="">
+<meta name="description" content="">
+</head>
+<body>
+<header class="navbar-wrapper">
+	<jsp:include page="../common/header.jsp"></jsp:include>
+</header>
+
+<section class="container">
+	<div class="main-wrap">
+		<div class="panel mt-10 pd-10 base-info" style="background-color:#ccc;">
+			<div class="panel cl">
+				<div class="date-btn f-l">
+					<div class="text text-s">上团日期</div>
+					<input id="startTime" class="btn btn-primary size-L" type="button" placeholder="" value="请选择日期" >
+				</div>
+				<div class="formControls col-xs-3 mt-5">
+					<input type="text" class="input-text" placeholder="填写贵阳市内接团地点(选填)" name="jtSite" id="jtSite" datatype="" nullmsg="">
+				</div>
+				<label class="f-12 mt-5" style="line-height:41px;">接送地点限制为贵阳市内的火车站、高铁站、客运站、机场，其他接送请填写到行程中</label>
+			</div>
+			
+			<div class="panel cl">
+				<div class="date-btn f-l">
+					<div class="text">下团日期</div>
+					<input id="endTime" class="btn btn-primary size-L" type="button" placeholder="" value="请选择日期">
+				</div>
+				<div class="formControls col-xs-3 mt-5">
+					<input type="text" class="input-text" placeholder="填写贵阳市内送团地点(选填)" name="stSite" id="stSite" datatype="" nullmsg="">
+				</div>
+				<label class="f-12 mt-5" style="line-height:41px;">租期4天</label>
+			</div>
+			
+			<div class="panel cl">
+				<div class="date-btn f-l" style="width:250px;">
+					<div class="text">人数</div>
+					<input type="text" style="height:41px;" class="input-text" placeholder="" name="pNum" id="pNum" datatype="*4-16" nullmsg="">
+				</div>
+				<div class="formControls col-xs-3 mt-5">
+					<input type="text" class="input-text" placeholder="团号(选填)" name="groupNo" id="groupNo" datatype="" nullmsg="">
+				</div>
+			</div>
+		</div>
+		
+		<div class="panel panel-default mt-10 route-info">
+			<div class="panel-header">线路填写</div>
+			<div class="panel-body">
+				<div style="background-color:#fff;padding:10px 0;text-align:center;">
+					<textarea onkeyup="check_format(this)"  id="route" name="route" cols="" rows="" class="textarea"  placeholder="说点什么...最少输入10个字符" datatype="*10-500" nullmsg="备注不能为空！" onblur="check_full_format(this)"></textarea>
+					<!-- <input type="text" class="input-text" style="width:95%;height:80px;font-size:18px;"> -->
+				</div>
+			</div>
+		</div>
+
+		<div class="panel panel-default mt-10 car-info">
+			<div class="panel-header">车辆选择</div>
+			<div class="panel-body">
+				<div class="car_show_btn" style="background-color:#fff;padding:50px 0;text-align:center;">
+					<input id="selectCar" class="btn btn-default radius size-XL" type="button" value="选择车辆" onclick="selectCar(this)">
+				</div>
+				<div class="car_show" style="display:none;">
+					<table class="table table-border table-bordered radius">
+						<thead class="text-c">
+						    <tr>
+								<th>车名</th>
+								<th>车牌号</th>
+								<th>座位数</th>
+								<th>价格</th>
+						    </tr>
+						</thead>
+						 <tbody class="text-c">
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		
+		<div class="panel panel-default mt-10 person-info">
+			<div class="panel-header">联系人信息</div>
+			<div class="panel-body">
+				<div class="mt-15">
+					<div class="row cl">
+						<label class="form-label col-xs-2 f-18">联系人\计调：</label>
+						<div class="formControls col-xs-5">
+							<input type="text" class="input-text" placeholder="4~16个字符，字母/中文/数字/下划线" name="username" id="username" datatype="*4-16" nullmsg="用户名不能为空">
+						</div>
+						<div class="col-xs-5"> </div>
+					</div>
+					<div class="row cl mt-5">
+						<label class="form-label col-xs-2 f-18">联系方式：</label>
+						<div class="formControls col-xs-5">
+							<input type="text" class="input-text" placeholder="4~16个字符，字母/中文/数字/下划线" name="username" id="username" datatype="*4-16" nullmsg="用户名不能为空">
+						</div>
+						<div class="col-xs-5"> </div>
+					</div>
+				</div>
+				<div class="mt-30">
+					<div class="row cl">
+						<label class="form-label col-xs-2 f-18">导游：</label>
+						<div class="formControls col-xs-5">
+							<input type="text" class="input-text" placeholder="4~16个字符，字母/中文/数字/下划线" name="username" id="username" datatype="*4-16" nullmsg="用户名不能为空">
+						</div>
+						<div class="col-xs-5"> </div>
+					</div>
+					<div class="row cl mt-5">
+						<label class="form-label col-xs-2 f-18">联系方式：</label>
+						<div class="formControls col-xs-5">
+							<input type="text" class="input-text" placeholder="4~16个字符，字母/中文/数字/下划线" name="username" id="username" datatype="*4-16" nullmsg="用户名不能为空">
+						</div>
+						<div class="col-xs-5"> </div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<div class="panel mt-30" style="background-color:rgba(255, 255, 255, 0);">
+			<div class="panel-body" style="text-align:center;">
+				<input class="btn btn-default radius size-XL" type="button" value="确认选择" onclick="selectOk(this)">
+			</div>
+		</div>
+		
+	</div>
+	
+	<footer class="footer mt-20">
+		<div class="container-fluid">
+			<nav> <a href="#" target="_blank">关于我们</a> <span class="pipe">|</span> <a href="#" target="_blank">联系我们</a> <span class="pipe">|</span> <a href="#" target="_blank">法律声明</a> </nav>
+			<p>Copyright &copy;2016 H-ui.net All Rights Reserved. <br>
+				<a href="http://www.miitbeian.gov.cn/" target="_blank" rel="nofollow">京ICP备1000000号</a><br>
+			</p>
+		</div>
+	</footer>
+	
+	<script id="selectcarpopup" type="text/template">
+	<div class="car_select_popup" id="car_select_popup">
+		<div class="title">车辆选择</div>
+		<div class="car_select">
+			<table class="table table-border table-bordered radius car_select_table">
+				<thead class="text-c">
+					<tr>
+						<th></th>
+						<th>车辆类型</th>
+						<th>座位数</th>
+						<th>单价</th>
+						<th>剩余数量(辆)</th>
+						<th>预定数量(辆)</th>
+					</tr>
+					<tbody class="text-c">
+					</tbody>
+				</thead>
+			</table>
+		</div>
+	</div>
+	<div class="popupBtn">
+		<input class="btn btn-primary size-L radius" type="button" value="确定" onclick="selectCarOk(this)">
+		<input class="btn btn-primary size-L radius" type="button" value="取消" onclick="cancelCarOk(this)">
+	</div>
+	</script>
+	
+	
+<script type="text/javascript" src="static/h-ui-lib/jquery/1.9.1/jquery.min.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/layer/2.1/layer.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/laypage/1.2/laypage.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/My97DatePicker/WdatePicker.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/icheck/jquery.icheck.min.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/bootstrap-Switch/bootstrapSwitch.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/Validform/5.3.2/Validform.min.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/Validform/5.3.2/passwordStrength-min.js"></script>
+<script type="text/javascript" src="static/js/jquery.datetimepicker.js"></script>
+<!-- 收索 -->
+<script language="javascript" type="text/javascript" src="static/h-ui-lib/jQuery.autocomplete/1.1/jquery.autocomplete.js"></script>
+<script type="text/javascript" src="static/h-ui/js/H-ui.js"></script>
+<script type="text/javascript" src="static/app/pc/js/base.js"></script>
+
+<script>
+//var navigation = responsiveNav("Hui-navbar", {customToggle: ".nav-toggle"});
+(function ($) {
+	   	$('#jtSite, #stSite').autocomplete('lxy/car/getAddSvcListByKw', {
+	        selectFirst: true,
+	        matchContains :false,
+	        minChars: 1, 
+	        dataType: "json",
+	        multiple : false,
+	        matchSubset : false,
+	        parse: function(data) 
+	        {
+	          	var parsed = [];
+	           for(var i=0;i<data.length;i++){
+	        	   parsed[i]={
+	        			data:data[i],
+	   					value:data[i].name,
+	   					result:data[i].name
+	        	   }
+	           }
+	            return parsed; 
+	        } ,
+	       formatItem: function(data) {
+	    		return "<p>"+data['name']+"</p>";
+	        }
+	    });
+	  
+	   	
+	   	$('#route').autocomplete('lxy/car/getRouteListByKw', {
+	        selectFirst: true,
+	        matchContains :false,
+	        minChars: 1, 
+	        dataType: "json",
+	        multiple : false,
+	        matchSubset : false,
+	        max:20,
+	        parse: function(data) 
+	        {
+	          	var parsed = [];
+	           for(var i=0;i<data.length;i++){
+	        	   parsed[i]={
+	        			data:data[i],
+	   					value:data[i],
+	   					result:data[i]
+	        	   }
+	           }
+	            return parsed; 
+	        } ,
+	       formatItem: function(data) {
+	    		return "<p>"+data+"</p>";
+	        }
+	    });
+	   	
+   })(jQuery);
+  
+   
+$(function(){
+	$('#startTime').datetimepicker({
+		lang:'ch',
+		format:'Y/m/d H:i:00',
+	});
+	$('#endTime').datetimepicker({
+		lang:'ch',
+		format:'Y/m/d',
+		timepicker:false
+	});
+});
+
+var bClick = true;
+var selectCarDlg = null;
+function selectCar() {
+	var startTime = $("#startTime").val();
+	var endTime = $("#endTime").val();
+	if(startTime == "请选择日期" || startTime == null){
+		modal_alert("请填写开始时间",2000);
+		return false;
+	}
+	if(endTime == "请选择日期" || endTime == null){
+		modal_alert("请填写结束时间",2000);
+		return false;
+	}
+	if(selectCarDlg == null){
+		selectCarDlg = new dialogBox({
+			title : '车辆选择',
+			selfClass : "type2",
+			contentHtml : $("#selectcarpopup").html(),
+			popupBoxW : 800,
+			popupBoxH : 580,
+			coverhide : true,
+			closeBtnshow :false,
+			hasTitle:false,
+			initEvent : function($dom){
+				var param = {
+	       				"startTime":startTime,
+	       				"endTime":endTime
+	       			};
+					
+				$.post('<%=basePath %>lxy/car/selectcar',param,function(res){
+					if(res.status == "success"){
+						for(var i=0; i<res.carList.length; i++){
+							var html = '<tr>';
+							html +='<td><input type="checkbox" id="sc" name="checkbox2"></td>';
+							html +='<td>'+res.carList[i].name+'<input type="hidden" id="typeId" value='+res.carList[i].typeId+'></td>';
+							html +='<td>'+res.carList[i].seatNum+'</td>';
+							html +='<td>￥'+res.carList[i].price+'/km</td>';
+							html +='<td>'+res.carList[i].availableCarNum+'</td>';
+							html +='<td><button id="del_num_btn" class="del_num_btn" onclick="delCarNum(this)">-</button><input type="hidden" id="total" value='+res.carList[i].availableCarNum+'><input id="car_num" class="car_num" type="text" readonly="readonly" value="0"><button class="add_num_btn" onclick="addCarNum(this)">+</button></td>';
+							html +='</tr>';
+							
+							$(".car_select_popup .car_select_table tbody").append(html);
+       					}
+					}else{
+						modal_alert("服务器异常，稍后再试！",2000);
+						return;
+					}
+				});
+			}
+		});
+	}
+	
+	selectCarDlg.showDlg();
+}
+
+function selectCarOk(obj){
+	var selectCarNum = 0;
+	var jsonData = '{"data":[';
+	$(":checkbox[id=sc]").each(function(index){
+        if(this.checked){
+        	bSelect = false;
+        	var carType=$(this).parent().parent().find("#typeId").val();
+			var carNum=$(this).parent().parent().find("#car_num").val();
+			if(carNum==0){
+				modal_alert("请选择车辆",2000);
+				return false;
+			}
+			jsonData += '{"carType":"'+carType+'","carNum":"'+carNum+'"},';
+			bSelect = true;
+			selectCarNum = Number(carNum)+Number(selectCarNum);
+        }
+    });
+	jsonData = jsonData.substring(0,jsonData.length-1);
+	jsonData += ']}';
+	
+	if(selectCarNum > 3){
+		modal_alert("选车不能超过3辆",2000);
+		return false;
+	}
+	var startTime = $("#startTime").val();
+	var endTime = $("#endTime").val();
+	if(bSelect){
+		var param = {
+				"startTime":startTime,
+				"endTime":endTime,
+				"jsonData":jsonData
+			};
+	
+		$.post('<%=basePath %>lxy/car/getCar',param,function(res){
+			if(res.status == 'success'){
+				$(".car_show_btn").hide();
+				$(".car_show tbody").empty();
+				for(var i=0; i < res.carInfoList.length; i++){
+					var html = '<tr>';
+					html +='<td>'+res.carInfoList[i].name+'<input type="hidden" id="stateId" value='+res.carInfoList[i].stateId+'></td>';
+					html +='<td>'+res.carInfoList[i].plateNum+'</td>';
+					html +='<td>'+res.carInfoList[i].seatNum+'</td>';
+					html +='<td>￥'+res.carInfoList[i].price+'/km</td>';
+					html +='</tr>';
+					$(".car_show tbody").append(html);
+				}
+				
+				if(selectCarDlg){
+					selectCarDlg.removeDlg(function(){
+						selectCarDlg = null;
+					});
+				}
+			}else{
+				modal_alert("服务器繁忙请稍后再试！", 2000);
+			}
+		});
+	}
+}
+
+function cancelCarOk(){
+	if(selectCarDlg){
+		selectCarDlg.removeDlg(function(){
+			selectCarDlg = null;
+		});
+	}
+}
+
+function delCarNum(obj){
+	$(obj).css({"color":"#333"});
+	//成人数量减1
+	var num = $(obj).parent().find(".car_num").val();
+	if(num==0){
+		return;
+	}
+	
+	$(obj).parent().find(".car_num").val(parseInt(num)-1);
+
+	
+	if($(obj).parent().find(".car_num").val()==1){
+		$(obj).css({"cursor":"not-allowed"});
+	}
+}
+
+function addCarNum(obj){
+	$(obj).css({"color":"#333"});
+	//成人数量减1
+	var num = $(obj).parent().find(".car_num").val();
+	var totalNum = $(obj).parent().find("#total").val();
+	if(num==totalNum){
+		return;
+	}
+	
+	$(obj).parent().find(".car_num").val(parseInt(num)+1);
+
+	
+	if($(obj).parent().find(".car_num").val() == totalNum){
+		$(obj).css({"cursor":"not-allowed"});
+	}
+}
+
+//当有字符输入时，检查路线格式是否正确
+function check_format(obj){
+	
+	/* var keyCode = event.keyCode;
+	alert(keyCode);
+	if((48<=keyCode && keyCode<=57) || (keyCode>= 65 && keyCode<=90) || (keyCode>=96 && keyCode<=105) || (keyCode==189)){
+		alert(keyCode);
+	} */
+	var rouStr = $(obj).val();
+	var regExp1 = new RegExp("^[\u4E00-\u9FA5a-zA-Z0-9]+(——|[\u4E00-\u9FA5a-zA-Z0-9])?$");//正确格式
+	var regExp2 = new RegExp("^[\u4E00-\u9FA5a-zA-Z0-9]+——{2,}$");//连着输入了两个‘——’
+	var regExp3 = new RegExp("^[\u4E00-\u9FA5a-zA-Z0-9——]+$");//输入了汉字、数字、英文字母和‘——’（用于否定）
+	var is_legal = regExp1.test(rouStr);
+	if(is_legal){
+		 
+	} else if(regExp2.test(rouStr)){
+		alert("不能连输两个及两个以上‘——’");
+	}else if(!regExp3.test(rouStr)){
+		alert("只能输入汉字、数字、英文字母和‘——’哟！");
+	} 
+}
+
+//提交表单时，检查路线是否完整
+function check_full_format(obj){
+	
+	var rouStr = $(obj).val();
+	var regExp = new RegExp("^([\u4E00-\u9FA5a-zA-Z0-9]+——)+[\u4E00-\u9FA5a-zA-Z0-9]+$");
+	if(!regExp.test(rouStr)){
+		alert("您还没有完善路线吧？请完善路线信息");
+	}
+	
+}
+
+</script>
+</body>
+</html>

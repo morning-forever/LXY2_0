@@ -1,0 +1,19 @@
+@CHARSET "UTF-8"; 
+
+.pd{padding:10px 0;}
+
+.default_route_edit{
+	padding:10px 20px;
+}
+
+.default_route_edit .routeName{
+	font-size:25px;
+	color: #e08821;
+}
+
+.default_route_edit .route-manger{
+	padding:10px 10px;
+	width:90%;
+	border-top: 1px solid #c0c0c0;
+	border-bottom: 1px solid #c0c0c0;
+}

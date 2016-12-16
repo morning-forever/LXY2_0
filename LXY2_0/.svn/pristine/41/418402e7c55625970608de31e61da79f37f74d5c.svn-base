@@ -1,0 +1,116 @@
+package com.lx.controller.app.mobile;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.alibaba.fastjson.JSONObject;
+import com.lx.bo.LockCar;
+import com.lx.controller.base.BaseController;
+import com.lx.exception.CarNotEnoughException;
+import com.lx.service.app.CarManagerService;
+import com.lx.util.PageData;
+import com.lx.util.XConst;
+
+@Controller("mobileCarController")
+@RequestMapping("mobile/car")
+public class CarController extends BaseController{
+	
+	
+	private final static String[] CAR_USER_STATE=new String[]{"LOCKED","BINDROUTE"};
+	
+	@Autowired
+	private CarManagerService carManagerService;
+	
+	@RequestMapping(value="/availableCars")
+	@ResponseBody
+	public PageData selectcar() throws Exception{
+		PageData res = new PageData();
+		try{
+			PageData pd = this.getPageData();
+			
+			String carUseState = getTypes(CAR_USER_STATE);
+			pd.put("carUseState", carUseState);
+			
+			List<PageData> carList = carManagerService.getAvailableCars(pd);
+			
+			res.put("carList", carList);
+			res.putStatus(XConst.SUCCESS);
+			
+		}catch (Exception e) {
+			res.putStatus(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		
+		return res;
+	}
+	
+	@RequestMapping("lockCar")
+	@ResponseBody
+	public PageData lockCar() {
+		
+		PageData res = new PageData();
+		
+		PageData pageData = this.getPageData();
+		String jsonData = pageData.getString("data");
+			
+		LockCar lockCar = JSONObject.parseObject(jsonData, LockCar.class);
+		//1.检查参数是否合格
+		boolean isParamOk = lockCar.getStartTime() != null && lockCar.getEndTime() != null && lockCar.getNeedCars() != null  
+					&& lockCar.getToken() != null
+				 	&& lockCar.getUserId() != null;
+		
+		
+		if(isParamOk){
+			
+			//2.如果参数合格，则检查token是否合格
+			res.put("oldToken", lockCar.getToken());
+			res.put("userId", lockCar.getUserId());
+
+			try {
+						
+				boolean isTokenSuccess = isTokenSuccess(res);
+				
+				//3.如果token不合格，直接返回{message:token_err}
+				if (!isTokenSuccess) {
+					return res;
+				}
+				
+				//4.如果token合格，则继续以下处理
+				 res= carManagerService.lockCar(lockCar);// 请求服务层做处理：1.查出要分配的具体车辆；2.锁定车辆；3.更新车的出行次数
+				// 无异常则成功
+				res.putMessage(XConst.SUCCESS);
+
+			}catch(CarNotEnoughException cne){
+				res.putMessage(cne.getMessage());
+				cne.printStackTrace();
+			}catch (Exception e) {
+				
+				res.putMessage(XConst.EXCEPTION);
+				e.printStackTrace();
+			}
+
+		}else{
+			res.putMessage(XConst.PARAM_ERR);
+		}
+		return res;
+	}
+	
+	
+	//返回指定类型订单字符串拼接
+	private String getTypes(String[] arr) {
+		StringBuffer typeBuffer=new StringBuffer();
+		for (int i = 0; i < arr.length; i++) {
+			typeBuffer.append("'");
+			typeBuffer.append(arr[i]);
+			typeBuffer.append("'");
+			typeBuffer.append(",");
+		}
+		
+		return typeBuffer.substring(0, typeBuffer.lastIndexOf(","));
+	}
+	
+}

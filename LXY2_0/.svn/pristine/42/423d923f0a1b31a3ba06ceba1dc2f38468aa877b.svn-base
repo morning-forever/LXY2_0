@@ -1,0 +1,200 @@
+@CHARSET "UTF-8";
+
+body{
+	background:#e9f5f4;
+}
+
+.footer {
+    border-top: 2px solid #00434b;
+    margin-top: 50px;
+    background: #00434b;
+    padding-bottom: 20px;
+}
+
+.bd-bottom{
+	border-bottom:1px solid #ddd;
+}
+
+.btn-green{
+	color:#fff;
+	background-color:#0ACFDA;
+	border-color:#0ACFDA;
+}
+
+.navbar-nav > ul > li > .big-text{
+	font-size:20px;
+}
+
+.navbar-nav > ul > li > .middle-text{
+	font-size:18px;
+}
+
+.date-btn{
+	position: relative;
+    width: 300px;
+    background-color: #fff;
+}
+
+.date-btn .text{
+	float: left;
+    width: 30%;
+    font-size: 15px;
+    text-align:center;
+    line-height: 41px;
+}
+
+.date-btn input{
+	width:70%;
+}
+
+.main-wrap .base-info .panel{
+	padding:5px 0;
+	margin-left:20px;
+	background-color:rgba(255, 255, 255, 0);
+}
+
+/*翻页按钮*/
+.pagination {
+	display: block;
+	text-align: center;
+	margin-top:40px;
+}
+
+.pagination span, .pagination a {
+	display: inline-block;
+	vertical-align: middle;
+	padding: 0 14px;
+	height: 26px;
+	line-height: 26px;
+	margin: 0 2px;
+	color: #333;
+	background: #fff;
+	border: 1px solid #dbdbdb;
+	font-size: 12px;
+	border-radius: 1px
+}
+
+.pagination a.disabled {
+	color: #949494;
+	border: 1px solid #dbdbdb
+}
+
+.pagination a.disabled:hover {
+	color: #949494;
+	border: 1px solid #dbdbdb
+}
+
+.pagination a:hover {
+	border: 1px solid #0ACFDA
+}
+
+.pagination a.current {
+	border: 1px solid #0ACFDA;
+    background: #0ACFDA;
+    color: #fff;
+}
+
+.pagination span.p_text {
+	border: none;
+	background: none;
+	padding: 0 2px
+}
+
+.pagination .gotopage {
+	font-size: 12px;
+	border: 1px solid #dbdbdb;
+	width: 30px;
+	line-height: 26px;
+	background: #fff;
+	margin: 0 5px;
+	text-align: center
+}
+/*翻页按钮*/
+
+.car_select{
+	height:450px;
+	overflow:scroll; /*任何时候都强制显示滚动条*/
+	overflow:auto; /*需要的时候会出现滚动条*/
+	overflow-y:auto; /*控制Y方向的滚动条*/
+}
+
+.car_num {
+    width: 50px;
+    height: 26px;
+    display: inline-block;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+.del_num_btn, .add_num_btn {
+    display: inline-block;
+    width: 30px;
+    height: 28px;
+    color: #333;
+    text-align: center;
+    cursor: pointer;
+    font-size: 20px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+.popupBtn{
+	height:36px;
+	/* padding-left:70%; */
+	margin:10px 50px;
+	position: absolute;
+	right:0;
+	z-index:100;
+	bottom:0px;
+}
+
+.status-tab .status-tabBar ul li{
+	display:block;
+	text-align:center;
+	cursor:pointer;
+	padding: 7px 20px;
+	font-size:16px;
+}
+
+.status-tab .status-tabBar .time-serch{
+    margin-left: 65%;
+    width: 300px;
+} 
+
+.status-tab .status-tabBar #tab_active{
+	background:#ddd;
+} 
+
+.tab-content .panel-header ul li{
+	float:left;
+}
+
+.tab-content > .panel-header {
+    border-color: #ddd;
+    background-color: #f5f5f5;
+    color: #444;
+}
+
+.tab-content .item-up{
+	padding:10px 30px;
+}
+
+.tab-content .item-down td{
+	font-size:14px;
+}
+
+.tab-content .item-down .div-btn{
+	padding:8px 0;
+	cursor: pointer;
+	color: #00F0FE;
+}
+
+.submit-order .left{
+	margin-left:20px;
+	width:100px;
+	text-align:right;
+}
+
+.person-center .current{
+	background-color:#ddd;
+}

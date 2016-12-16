@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AdminOrderMapper">
+
+<!-- 查询订单列表信息 -->
+	<select id="findOrderList" resultType="pd">
+		select lof.id,lof.create_time as createTime,
+		lof.order_code as orderCode,lof.group_no as groupNo,
+		lof.pay_method as payMethod,lof.pay_order_id as payOrderId,
+		sau.USERNAME,lof.contact_person as contactPerson,lof.contact_number as contactNumber,
+		lof.km,lof.price,
+		lof.current_state as orderState,su.`NAME` as assessor from 	lxy_order_form lof 
+		left JOIN  sys_app_user sau ON lof.user_id = sau.USER_ID
+		LEFT JOIN sys_user su ON su.USER_ID = lof.assessor
+		where lof.is_valid = 1    
+		<if test=" nickName != null and nickName !='' ">
+			AND sau.`USERNAME` like CONCAT('%', #{nickName},'%')
+		</if>
+		<if test=" orderCode != null and orderCode !='' ">
+			and lof.order_code  = #{orderCode}
+		</if>
+		<if test=" payOrderId != null and payOrderId !='' ">
+			and lof.pay_order_id  = #{payOrderId}
+		</if>
+		<if test=" personPhone != null and personPhone !='' ">
+			and lof.contact_number  = #{personPhone}
+		</if>
+		<if test=" orderState != null and orderState !='' ">
+			and lof.`order_state`  = #{orderState}
+		</if>
+		<if test=" orderTime != null and orderTime !='' ">
+			and DATE_FORMAT(lof.`create_time`, '%Y-%m-%d')  = str_to_date(#{orderTime} , '%Y-%m-%d') 
+		</if>
+		ORDER BY lof.create_time DESC
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select>
+	
+	<!--订单总数  -->
+	<select id="findOrderListCount" resultType="Integer">
+		select count(*) from (select lof.id,lof.create_time as createTime,
+		lof.order_code as orderCode,lof.group_no as groupNo,
+		lof.pay_method as payMethod,lof.pay_order_id as payOrderId,
+		sau.USERNAME,lof.contact_person as contactPerson,lof.contact_number as contactNumber,
+		lof.km,lof.price,
+		lof.current_state as orderState,su.`NAME` as assessor from 	lxy_order_form lof 
+		left JOIN  sys_app_user sau ON lof.user_id = sau.USER_ID
+		LEFT JOIN sys_user su ON su.USER_ID = lof.assessor
+	  
+		where lof.is_valid = 1    
+		<if test=" nickName != null and nickName !='' ">
+			AND sau.`USERNAME` like CONCAT('%', #{nickName},'%')
+		</if>
+		<if test=" orderCode != null and orderCode !='' ">
+			and lof.order_code  = #{orderCode}
+		</if>
+		<if test=" payOrderId != null and payOrderId !='' ">
+			and lof.pay_order_id  = #{payOrderId}
+		</if>
+		<if test=" personPhone != null and personPhone !='' ">
+			and su.`PHONE`  = #{personPhone}
+		</if>
+		<if test=" orderState != null and orderState !='' ">
+			and lof.`order_state`  = #{orderState}
+		</if>
+		<if test=" orderTime != null and orderTime !='' ">
+			and DATE_FORMAT(lof.`create_time`, '%Y-%m-%d')  = str_to_date(#{orderTime} , '%Y-%m-%d') 
+		</if>) t
+	</select>
+	
+	
+	<select id="getOrderById" parameterType="java.lang.Long" resultType="pd">
+		select lof.order_code as orderCode,lof.start_time as startTime,lof.end_time as endTime, ldr.content as defaultRoute,lof.user_defined_route as userDefinedRoute,ldr.km as defaultRouteKm,las.`name` as addSvc,lof.add_svc_other as addSvcOther, 
+			las.km as addSvcKm,lof.km as orderFormKm,lof.price,
+			lof.contact_person as contactPerson,lof.contact_number as contactNumber,lof.create_time as createTime
+			from lxy_order_form  lof
+			LEFT JOIN lxy_default_route ldr ON lof.default_route_id = ldr.id
+			LEFT JOIN lxy_add_svc las ON  lof.add_svc_id = las.id
+			where lof.id = #{id}
+	</select>
+	
+	<!-- 获取退款列表 -->
+	<select id="findRefundList" resultType="pd">
+		SELECT 
+		  lof.id as orderId,
+		  lof.`order_code`,
+		  lof.`pay_order_id`,
+		  lof.`pay_type`,
+		  lof.`order_state`,
+		  
+		  loi.`price`,
+		  loi.`down_payment` AS downPayment,
+		  loi.`name`,
+		  
+		  lor.`create_time`,
+		  lor.`person_name`,
+		  lor.`bank_name` AS bankName,
+		  lor.`bank_no`,
+		  lor.`finish_time`,
+		  lor.id as refundId,
+		  lor.is_check,
+		  lor.reason,
+		  
+		  su.`USER_ID` AS userId,
+		  su.`USERNAME` AS username,
+		  su.`NAME` AS realname,
+		  su.`PHONE` AS phone
+		  
+		FROM
+		  lxy_order_form lof 
+		  INNER JOIN lxy_order_refund lor 
+		  	ON lor.`form_id` = lof.`id`
+		  	AND lor.state = 'ADD'
+		  INNER JOIN lxy_order_item loi 
+    		ON loi.`form_id` = lof.`id` 
+		  INNER JOIN sys_app_user su 
+		    ON su.`USER_ID` = lof.`user_id`
+		WHERE lof.`is_delete` = 0
+		
+		<if test=" name != null and name !='' ">
+			and su.`USERNAME` like CONCAT('%', #{name},'%')
+		</if>
+		<if test=" orderCode != null and orderCode !='' ">
+			and lof.order_code  = #{orderCode}
+		</if>
+		<if test=" payOrderId != null and payOrderId !='' ">
+			and lof.pay_order_id  = #{payOrderId}
+		</if>
+		<if test=" personPhone != null and personPhone !='' ">
+			and su.`PHONE`  = #{personPhone}
+		</if>
+		<if test=" orderState != null and orderState !='' ">
+			and lof.`order_state` in (${orderState})
+		</if>
+		<if test=" orderTime != null and orderTime !='' ">
+			and DATE_FORMAT(lof.`create_time`, '%Y-%m-%d')  = str_to_date(#{orderTime} , '%Y-%m-%d') 
+		</if>
+		
+		<if test=" showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select>
+	
+	
+	<select id="findRefundListCount" resultType="Integer">
+		SELECT 
+		  count(1)
+		FROM
+		  lxy_order_form lof 
+		  INNER JOIN lxy_order_refund lor 
+		  	ON lor.`form_id` = lof.`id`
+		  	AND lor.state = 'ADD'
+		  INNER JOIN lxy_order_item loi 
+    		ON loi.`form_id` = lof.`id` 
+		  INNER JOIN sys_app_user su 
+		    ON su.`USER_ID` = lof.`user_id`
+		WHERE lof.`is_delete` = 0
+		
+		<if test=" name != null and name !='' ">
+			and su.`USERNAME` like CONCAT('%', #{name},'%')
+		</if>
+		<if test=" orderCode != null and orderCode !='' ">
+			and lof.order_code  = #{orderCode}
+		</if>
+		<if test=" payOrderId != null and payOrderId !='' ">
+			and lof.pay_order_id  = #{payOrderId}
+		</if>
+		<if test=" personPhone != null and personPhone !='' ">
+			and su.`PHONE`  = #{personPhone}
+		</if>
+		<if test=" orderState != null and orderState !='' ">
+			and lof.`order_state` in (${orderState})
+		</if>
+		<if test=" orderTime != null and orderTime !='' ">
+			and DATE_FORMAT(lof.`create_time`, '%Y-%m-%d')  = str_to_date(#{orderTime} , '%Y-%m-%d') 
+		</if>
+	</select>
+	
+	<!-- 检验是否可以退款 -->
+	<select id="checkExamine" resultType="Integer">
+		select count(1) from lxy_order_form where order_state = 'REFUNDING' and id = #{orderId}
+	</select>
+	
+	<!-- 更新审核状态为已审核 -->
+	<update id="updateCheck">
+		UPDATE 
+		  lxy_order_refund wor 
+		SET
+		  wor.`is_check` = 0
+		<!-- 如果退款完成，则修改退款完成时间 -->
+		<if test=" state != null and state !='' and state == 'REFUNDED' ">
+			, wor.`finish_time` = NOW() 
+		</if>
+		WHERE wor.`id` = #{refundId}
+		  AND wor.`is_check` = 1 
+	</update>
+	
+	<!-- 新增一条审核记录 -->
+	<insert id="addExamine">
+		insert into lxy_order_examine
+		(create_time, form_id, reason, result)
+		values
+		(NOW(), #{orderId}, #{reason}, #{result})
+	</insert>
+	
+	<select id="findRefundInfo" resultType="pd">
+		SELECT 
+		  su.`USER_ID` AS userId,
+		  su.`USERNAME` AS username,
+		  su.`NAME` AS realname,
+		  su.`PHONE` AS phone,
+		  
+		  lor.`reason` AS tkReason,
+		  lor.`person_name`,
+		  lor.`bank_name`,
+		  lor.`bank_no`, 
+		  lof.order_code
+		  
+		FROM
+		  lxy_order_refund lor 
+		  INNER JOIN lxy_order_form lof 
+		    ON lof.`id` = lor.`form_id` 
+		  INNER JOIN sys_app_user su 
+		    ON su.`USER_ID` = lof.`user_id`
+		WHERE lor.`form_id` = #{orderId}
+		  and lor.state = 'ADD'
+	</select>
+	
+	<select id="findExamineList" resultType="pd">
+		SELECT 
+		  woe.create_time,
+		  woe.reason,
+		  woe.result
+		FROM
+		  lxy_order_examine woe 
+		WHERE woe.form_id = #{orderId}
+		order by woe.create_time desc
+	</select> 
+	
+	<!--路线审核成功 start-->
+		<!-- 总公里数修改-->
+		<update id="editTotalKm">
+			UPDATE lxy_order_item SET total_km = #{totalKm}
+			WHERE id = #{itemId}
+		</update>
+		
+		<!--路线公里数审核完成后更新订单状态为WAITPAY -->
+		<update id="updateToCheckSuccess" parameterType="pd">
+			update lxy_order_form  set order_state = 'CHECKSUCCESS',assessor = #{assessor} where id=#{id}
+		</update>
+		
+		<!--根据总公里数更新总价格  -->
+		<update id="updatePrice" parameterType="pd">
+			update lxy_order_item SET price = 
+			<!--查找订单中的车的总单价  -->
+			(select sum(lct.price) as totalPrice from lxy_car_info lci
+			left join lxy_car_type lct on lci.car_type_id = lct.id
+			left join lxy_car_state lcs on lci.id = lcs.car_id
+			where lcs.id in(car_ids))
+			<!--乘以总公里数  -->
+			*total_km
+			where id = #{itemId}
+		</update>
+	<!--路线审核成功end-->
+	
+	
+	<!--路线审核不成功  start-->
+		<!--将订单状态置为CHECKFAIL  -->
+		<update id="updateToCheckFail" parameterType="pd">
+			update lxy_order_form set order_state = 'CHECKFAIL',assessor=#{assessor} where id=#{id}
+		</update>
+		<!--根据订单id查询订单所锁定的车辆状态记录id  -->
+		<select id="getCarStateIdsByOrderId" parameterType="pd" resultType="java.lang.String">
+			select loi.car_ids from lxy_order_form lof left join lxy_order_item loi on lof.id = loi.form_id where lof.id = #{id}
+		</select>
+		<update id="updateCarState" parameterType="pd">
+			UPDATE lxy_car_state SET 
+			use_state = #{newState}
+			WHERE use_state = #{oldState} AND id IN(${carStateIds})
+		</update>
+	<!--路线审核不成功end  -->
+	
+	<update id="lgcDelById" parameterType="java.lang.Long">
+		UPDATE lxy_order_form SET is_valid = 0 where id = #{id}
+	</update>
+	
+	<!--获取联系人信息  -->
+	<select id="getPersonInfo" parameterType="pd" resultType="pd">
+		select loi.person_phone as personPhone,sau.EMAIL as personEmail from lxy_order_form lof 
+		LEFT JOIN lxy_order_item loi ON lof.id = loi.form_id
+		LEFT JOIN sys_app_user sau ON lof.user_id = sau.USER_ID
+		where lof.id = #{id}
+	</select>
+	
+	<!--获取订单总公里数和价格  -->
+	<select id="getTkPriceById" parameterType="pd"  resultType="pd">
+		select total_km as totalKm,price from lxy_order_item  where id = #{itemId}
+	</select>
+	
+	<!--根据id获取订单号  -->
+	<select id="getOrderCodeById" parameterType="pd" resultType="java.lang.String">
+		select order_code as orderCode from lxy_order_form where id = #{id} 
+	</select>
+	
+</mapper>

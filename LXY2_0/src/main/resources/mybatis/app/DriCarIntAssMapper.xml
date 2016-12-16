@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DriCarIntAssMapper">
+	
+	<select id="getAllDriNamsAndIds" resultType="pd">
+		SELECT id,name FROM lxy_driver where is_valid=1
+	</select>
+	
+	<update id="carAssDri" parameterType="pd">
+		update lxy_car_info set driver_id=#{driverId} where id=#{carId}
+	</update>
+	
+	<select id="getDriverByCarId" parameterType="java.lang.Long" resultType="pd">
+		SELECT ld.id,ld.`name`,ld.tel FROM `lxy_driver` ld 
+		LEFT JOIN lxy_car_info lci ON ld.id = lci.driver_id  
+		where lci.id=#{carId};
+	</select>
+	
+	
+	
+	
+	
+</mapper>
+

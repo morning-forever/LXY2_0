@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="MessageMapper">
+
+	<!-- <select id="messageList" resultType="pd" parameterType="pd">
+		SELECT wmsg.id,DATE_FORMAT(wmsg.create_time,'%Y-%m-%d %H:%i:%s') sendTime,wmsg.msg_type msgType,wmsg.msg_source msgSource,wmsg.messages
+		,wmsg.biuld_img biuldImg,wmsg.biuld_title biuldTitle
+		,wmsg.biuld_id biuldId ,wmsg.is_read isRead
+		,wmsg.from_user_id fromUserId,fu.nickname fromNickName,fu.head_img headImg
+		,wmsg.to_user_id toUserId,tu.nickname toNickName
+		FROM lxy_message wmsg
+		LEFT JOIN web_user fu ON fu.id = wmsg.from_user_id
+		LEFT JOIN web_user tu on tu.id = wmsg.to_user_id
+		WHERE 1=1 
+		AND wmsg.msg_type = #{msgType}
+		AND wmsg.to_user_id = #{userId}
+		
+		ORDER BY wmsg.create_time DESC
+		<if test="startLine !=null ">
+			LIMIT ${startLine},${showLine}
+		</if>
+		;
+	</select>
+	
+	<select id="messageListCount" resultType="Long" parameterType="pd">
+		SELECT COUNT(*)
+		FROM lxy_message wmsg
+		LEFT JOIN web_user fu ON fu.id = wmsg.from_user_id
+		LEFT JOIN web_user tu on tu.id = wmsg.to_user_id
+		WHERE 1=1 
+		AND wmsg.msg_type = #{msgType}
+		AND wmsg.to_user_id = #{userId}
+	</select> -->
+	
+	<select id="checkRead" parameterType="pd" resultType="Integer">
+		SELECT COUNT(*) FROM lxy_message where id = #{id} AND is_read = 0;
+	</select>
+	
+	<update id="readMessage" parameterType="pd">
+		UPDATE lxy_message SET is_read = 0 WHERE id = #{id} AND to_user_id = #{userId};
+	</update>
+	
+	<select id="findUnreadLine" parameterType="pd" resultType="pd">
+		SELECT wmsg.msg_type msgType,COUNT(*) unreadLine
+		FROM lxy_message wmsg
+		WHERE wmsg.is_read = 1 AND wmsg.to_user_id = #{userId}
+		GROUP BY wmsg.msg_type;
+	</select>
+	
+	<delete id="delMessage" parameterType="pd">
+		DELETE FROM lxy_message WHERE id = #{msgId} AND to_user_id =#{userId};
+	</delete>
+	
+	<update id="updateReadByType" parameterType="pd" >
+		UPDATE lxy_message SET is_read = 0 
+		WHERE is_read = 1 AND to_user_id = #{userId} AND msg_type = #{msgType}
+	</update>
+	
+	<insert id="addMessage" parameterType="pd" useGeneratedKeys="true" keyProperty="userId">
+		INSERT lxy_message 
+		(create_time, messages,msg_type,msg_source,from_user_id,to_user_id,biuld_id,biuld_title,biuld_img,is_read) 
+		VALUES 
+		(NOW(), #{message},#{msgType},#{msgSource},#{fromUserId},#{toUserId},#{biuldId},#{biuldTitle},#{biuldImg},1);
+	</insert>
+	
+</mapper>

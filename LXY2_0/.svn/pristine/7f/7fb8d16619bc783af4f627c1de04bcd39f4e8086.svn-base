@@ -1,0 +1,256 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" import="com.lx.util.XConst" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%
+	String path = request.getContextPath();
+	String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
+%>
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1"/>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta name="keywords" content="" />
+		
+		<base href="<%=basePath%>">
+		
+		
+		<link rel="stylesheet" type="text/css" href="static/css/bootstrap.min.css"/>
+		<link rel="stylesheet" type="text/css" href="static/css/jquery.ui.datepicker.css"/>
+	    <link id="skin" rel="stylesheet" href="static/jbox/Pink/jbox.css" />
+	    <link rel="stylesheet" type="text/css" href="static/tips/tip-darkgray/tip-darkgray.css"/>
+		
+		<link rel="stylesheet" type="text/css" href="static/app/pc/css/common.css"/>
+		<link rel="stylesheet" type="text/css" href="static/app/pc/css/stylenew.css"/>
+	</head>
+<body>
+<div id="main-container">
+	<div class="header">
+		<jsp:include page="../../common/header.jsp"></jsp:include>
+		<div class="header_nav" id="home">
+			<div class="container">
+				<nav class="navbar navbar-container">
+					<div class="navbar-header">
+						<a class="navbar-brand logo-st" href="lxy/car/reservation/index">龙行云</a>
+					</div>
+					<div class="clearfix"></div>
+				</nav>
+			</div>
+		</div>
+	</div>
+	
+	<div class="row-fluid main-wrap">
+		<div class="container">
+			<div class="row-fluid select pay-content">
+				<div class="info">
+					<span class="icon hook"></span>
+					<span class="text">提交订单成功</span>
+					<span class="explain">请您在<a>${data.createTime }</a>内支付完成，否则订单自动取消</span>
+				</div>
+				
+				<div class="order-number">
+					<span class=" text20">订单编号:</span>
+					<span class="text20">${data.orderCode }</span>
+				</div>
+				
+				<div class="price">
+					<span class=" text20">订单金额:</span>
+					<span class="text20">￥${detail.realPrice }</span>
+				</div>
+				
+				<div class="main-part">
+					<div id="alipay" class="option selected">
+						<span class="icon alipay"></span><span id="alipay-status"></span>
+					</div>
+					
+					<div id="wxpay" class="option">
+						<span class="icon wxpay"></span><span id="wxpay-status"></span>
+					</div>
+				</div>
+				
+				<span class="go-pay"><input value="前往支付" type="button"></span>
+			</div>
+		</div>
+	</div>
+	
+	<jsp:include page="../../common/footer.jsp"></jsp:include>
+</div>	
+
+<script id="paystatepopup" type="text/template">
+	<div class="waitpay">
+		<h1>支付完成前，请不要关闭此验证窗口</h1>
+		<h1>支付完成后，请根据您支付的情况点击下面按钮</h1>
+		<div class="select-result">
+		<section>
+			<span>如已支付成功，请点击</span>
+			<a id="ok" href="lxy/pc/user/order/list">支付成功</a>
+		</section>
+		<section>
+			<span>如支付遇到问题，可以</span>
+			<a id="problem" href="JavaScript:goPay(this);">重新支付</a>
+		</section>
+		<section>
+			<span>客服热线:123255132</span>
+		</section>
+	</div>
+	</div>
+</script>
+
+<script type="text/javascript" src="static/js/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="static/js/jquery-1.8.3.js"></script>
+<script type="text/javascript" src="static/js/jquery.ui.core.js"></script>
+<script type="text/javascript" src="static/js/jquery.ui.datepicker.js"></script>
+<script type="text/javascript" src="static/jbox/js/jquery.jBox.src.js"></script>
+
+<script type="text/javascript" src="static/app/pc/js/base.js"></script>
+<script type="text/javascript" src="static/tips/jquery.poshytip.js"></script>
+
+<script type="text/javascript">
+
+var dlg = null;
+function showPopup() {
+	if(dlg == null){
+		dlg = new dialogBox({
+			title : '车辆选择',
+			selfClass : "type2",
+			contentHtml : $("#paystatepopup").html(),
+			popupBoxW : 540,
+			popupBoxH : 320,
+			coverhide : false,
+			closeBtnshow :false,
+			hasTitle:false,
+			initEvent : function($dom){
+				
+			}
+		});
+	}
+	
+	dlg.showDlg();
+}
+
+function goPay(obj){
+	var data = {
+			"orderId":'${detail.orderId}',
+			"orderType":'${detail.orderType}',
+			"price" : '${detail.realPrice }'
+		};
+
+	subWebForm("<%=basePath %>allowAccess/orders/toPay",data);
+}
+
+ $(function(){
+	var mainHeight = $("#main-container").height();
+	if(mainHeight < window.innerHeight){
+		$(".footer").css("margin-top",window.innerHeight-mainHeight+20);
+	}
+	 
+	// 获取某个时间格式的时间戳
+	var stringTime = "${data.updateTime}";
+	var timestamp2 = Date.parse(new Date(stringTime));
+	timestamp2 = timestamp2 / 1000;
+	if("${data.orderState}"== "<%=XConst.ORDER_STATE.CHECKSUCCESS%>"){
+		var endTimeStamp = Number(timestamp2) + 24*60*60;
+	}else if("${data.orderState}"== "<%=XConst.ORDER_STATE.WAITPAY%>"){
+		var endTimeStamp = Number(timestamp2) + 30*60;
+	}
+	
+	
+	function remainTime(){ 
+		var curTimestamp = Date.parse(new Date());
+		curTimestamp = curTimestamp / 1000;
+		if(endTimeStamp-curTimestamp < 0){
+			$(".explain").css("color","red");
+			$(".explain").text("此订单已经过期，请重新购买！");
+			return;
+		}
+		var result=formatSeconds(endTimeStamp-curTimestamp);
+		$(".explain a").text(result);
+		
+	    setTimeout(remainTime,1000);
+	}  
+	remainTime(); 
+	 
+	//初始化默认支付方式
+	var current_pay_type="alipay";
+	//$("#alipay-status").css("display","inline-block");
+	
+	//选择支付宝
+	$("#alipay").click(function(){
+		//$("#alipay-status").css("display","inline-block");
+		//$("#wxpay-status").css("display","none");
+		current_pay_type="alipay";
+		//$("#pay-type-text").text("支付宝");
+		
+	});
+	
+	//选择微信
+	$("#wxpay").click(function(){
+		alert("微信支付暂未开通！");
+		return;
+		//$("#alipay-status").css("display","none");
+		//$("#wxpay-status").css("display","inline-block");
+		//current_pay_type="wxpay";
+		//$("#pay-type-text").text("微信");
+	});
+	
+	//点击支付
+	$(".go-pay").click(function(){
+		var curTimestamp = Date.parse(new Date());
+		curTimestamp = curTimestamp / 1000;
+		if(endTimeStamp-curTimestamp < 0){
+			/* alert("超时支付！")
+			return; */
+		}
+		var data = {
+			"orderId":'${detail.orderId}',
+			"orderType":'${detail.orderType}',
+			"payMethod":'ALLPAY',
+			"trade_status":"TRADE_SUCCESS",
+			"trade_no":"2016000000"
+		};
+		if(current_pay_type=="alipay"){
+			showPopup();
+			<%-- subWebForm("<%=basePath %>allowAccess/orders/pay",data,"_blank"); --%>
+			subWebForm("<%=basePath %>allowAccess/orders/callback",data);
+		}else if(current_pay_type=="wxpay"){
+			<%-- subWebForm("<%=basePath %>allowAccess/orders/wxpay",data); --%>
+		}else{
+			alert("支付方式选择错误");
+		}
+	});
+	
+	function formatSeconds(value) {
+	    var theTime = parseInt(value);// 秒
+	    var theTime1 = 0;// 分
+	    var theTime2 = 0;// 小时
+	    if(theTime > 60) {
+	        theTime1 = parseInt(theTime/60);
+	        theTime = parseInt(theTime%60);
+			if(theTime1 > 60) {
+	            theTime2 = parseInt(theTime1/60);
+	            theTime1 = parseInt(theTime1%60);
+			}
+		}
+	    
+       	var result = ""+parseInt(theTime);
+        if(theTime1 > 0) {
+        	if(parseInt(theTime1)<10){
+        		result = "0"+parseInt(theTime1)+":"+result;
+        	}else{
+        		result = ""+parseInt(theTime1)+":"+result;
+        	}
+        }else{
+        	result = "00:"+result;
+        }
+        if(theTime2 > 0) {
+        	result = ""+parseInt(theTime2)+":"+result;
+        }else{
+        	result = "00:"+result;
+        }
+	    return result;
+	}
+	
+});
+</script>
+</body>
+</html>

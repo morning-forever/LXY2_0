@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AddSvcMapper">
+
+	
+	<insert id="addOneAddSvc" parameterType="pd">
+		insert into lxy_add_svc(name, km) values (#{name},#{km})
+	</insert>
+	
+	<!-- 删除-->
+	<delete id="lgcDelAddSvc" parameterType="java.lang.Long">
+		update lxy_add_svc set is_valid= 0  where id = #{id}
+	</delete>
+	
+	<select id="getAddSvcById" resultType="pd" parameterType="java.lang.Long">
+		select * from lxy_add_svc where id=#{id}
+	</select>
+	<!-- 修改 -->
+	<update id="updateOneAddSvc" parameterType="pd">
+		update  lxy_add_svc set name = #{name}, km = #{km}  where id = #{id}
+	</update>
+	
+	
+	<!-- 后台 -->
+	<!-- 显示附加服务list -->
+	<select id="getAddSvcList" resultType="pd">
+		SELECT id, name, km FROM lxy_add_svc
+		WHERE is_valid = 1
+		<if test=" name != null and name != '' ">
+			AND name  = #{name}
+		</if>
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select>
+	
+	
+	<select id="getAddSvcCount" resultType="Integer">
+		SELECT count(1) FROM lxy_add_svc
+		WHERE is_valid = 1
+		<if test=" name != null and name != '' ">
+			AND name  = #{name}
+		</if>
+	</select>
+	
+	<select id="getAddSvcListByKw" resultType="pd" parameterType="java.lang.String">
+		select name,km from lxy_add_svc where name like concat('%',#{_parameter},'%');
+	</select>
+	
+</mapper>

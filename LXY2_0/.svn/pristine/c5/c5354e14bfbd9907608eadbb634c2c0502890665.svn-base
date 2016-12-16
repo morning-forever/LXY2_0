@@ -1,0 +1,212 @@
+package com.lx.service.system.lxy;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+//import com.bm.webs.controller.util.SMSHelper;
+import com.lx.dao.DaoSupport;
+import com.lx.entity.home.Area;
+import com.lx.entity.home.City;
+import com.lx.entity.home.Country;
+import com.lx.util.PageData;
+
+/**
+ * 
+ * 
+ * 
+ * @author Daisy
+ *
+ */
+@Service
+@Transactional
+@SuppressWarnings("unchecked")
+public class AdminRouteService {
+	
+	@Resource(name="daoSupport")
+	private DaoSupport dao;
+	
+	
+	//查询所有贵州所有市
+		public List<City> getAllCities() throws Exception{
+			
+			return (List<City>) dao.findForList("RouteAddressMapper.getAllcities", null);
+		}
+		//根据市的Id查询县
+		public List<Area> getAreasByCityId(String cityId) throws Exception{
+			
+			return(List<Area>) dao.findForList("RouteAddressMapper.getAreasByCityId",cityId );
+		}
+		
+		//根据县的ID查询乡镇
+		public List<Country> getCountriesByAreaId(String areaId) throws Exception{
+			
+			return(List<Country>) dao.findForList("RouteAddressMapper.getCountriesByAreaId", areaId);
+		}
+		
+		//根据Id查询所有市
+		public List<City> getCityById(String cityId) throws Exception{
+			return (List<City>)dao.findForList("RouteAddressMapper.getCityById", cityId);
+		}
+		
+		//根据Id查询所有县
+		public List<Area> getAreaById(String areaId) throws Exception{
+			return (List<Area>) dao.findForList("RouteAddressMapper.getAreaById", areaId);
+		}
+		
+		//根据Id查询所有乡镇
+		public List<Country> getCountryById(String countryId) throws Exception{
+			return (List<Country>) dao.findForList("RouteAddressMapper.getCountryById", countryId);
+		}
+
+		
+		
+		
+		/**
+		 * 获取里程列表
+		 * @throws Exception 
+		 */
+		public PageData findAddressManage(PageData param) throws Exception{
+			Integer total = (Integer) dao.findForObject("RouteDistanceMapper.findDistanceManageCount", param);
+			List<PageData> list = (List<PageData>) dao.findForList("RouteDistanceMapper.findDistanceManage", param);
+			param.clear();
+			param.put("data", list);
+			param.put("recordsTotal", total);
+			param.put("recordsFiltered", total);
+			return param;
+		}
+		
+		//添加市
+		public  void addCity(PageData param) throws Exception {
+			Integer total = (Integer) dao.findForObject("RouteDistanceMapper.findCityCount", param);
+			String cityId;
+			if(total>0 && total<10){
+				 cityId = "0"+total;
+			}else{
+				cityId = ""+total;
+			}
+			String provinceId = "00";
+			param.put("provinceId", provinceId);
+			param.put("cityId", cityId);
+			dao.save("RouteDistanceMapper.addCity", param);
+		}
+		
+		//添加县
+		public  void addArea(PageData param) throws Exception {
+			Integer total = (Integer) dao.findForObject("RouteDistanceMapper.findAreaCounts", param);
+			String cityId = param.getString("cityId");
+			String areaId;
+			total = total+1;
+			if(total>0 && total<10){
+				areaId = cityId+"000"+total;
+			}else{
+				areaId = cityId+"00"+total;
+			}
+			param.put("areaId", areaId);
+			param.put("cityId", cityId);
+			dao.save("RouteDistanceMapper.addArea", param);
+		}
+		
+		
+		//添加景点
+		public  void addCountry(PageData param) throws Exception {
+			Integer total = (Integer) dao.findForObject("RouteDistanceMapper.findCountryCounts", param);
+			String areaId = param.getString("areaId");
+			String countryId;
+			total = total+1;
+			if(total>0 && total<10){
+				countryId = areaId+"000"+total;
+			}else{
+				countryId = areaId+"00"+total;
+			}
+			param.put("areaId", areaId);
+			param.put("countryId", countryId);
+			dao.save("RouteDistanceMapper.addCountry", param);
+		}
+		
+		//修改市
+		public void updataCity(PageData param) throws Exception {
+			dao.update("RouteDistanceMapper.updateCityById", param);
+
+		}
+
+		//修改县
+		public void updataArea(PageData param) throws Exception {
+			dao.update("RouteDistanceMapper.updateAreaById", param);
+		}
+		
+		//修改景点
+		public void updataCountry(PageData param) throws Exception {
+			dao.update("RouteDistanceMapper.updateCountryById", param);
+		}
+		
+		//删除景点
+		public void deleteCountry(PageData param) throws Exception {
+			dao.update("RouteDistanceMapper.deleteCountry", param);
+		}
+		
+		/**
+		 * 获取里程列表
+		 * @throws Exception 
+		 */
+		
+		/*public PageData findDistanceList(PageData param) throws Exception{
+			Integer total = (Integer) dao.findForObject("RouteDistanceMapper.findDistanceCount", param);
+			List<PageData> list = (List<PageData>) dao.findForList("RouteDistanceMapper.findDistance", param);
+			for(int j=0; j < list.size(); j++){
+				PageData startAdd = list.get(j); 
+				String startAddName = getName(startAdd.getString("start_address"));
+				String endAddName = getName(startAdd.getString("end_address"));
+				startAdd.put("startAddName", startAddName);
+				startAdd.put("endAddName", endAddName);
+				
+			}
+			param.clear();
+			param.put("data", list);
+			param.put("recordsTotal", total);
+			param.put("recordsFiltered", total);
+			return param;
+		}*/
+		public PageData findDistanceList(PageData param) throws Exception{
+			Integer total = (Integer) dao.findForObject("RouteDistanceMapper.findDistanceCount", param);
+			List<PageData> list = (List<PageData>) dao.findForList("RouteDistanceMapper.findDistance", param);
+			
+			param.clear();
+			param.put("data", list);
+			param.put("recordsTotal", total);
+			param.put("recordsFiltered", total);
+			return param;
+		}
+		
+		//查询详细地址名字
+		public String getName(String strId) throws Exception {
+			PageData param = new PageData();
+			param.put("countryId", strId);
+			param.put("areaId", strId.substring(0, 6));
+			param.put("cityId", strId.substring(0, 2));
+			List<PageData> list = (List<PageData>)dao.findForList("RouteAddressMapper.getName", param);
+			for(int i=0;i<list.size();i++){
+				PageData startAdd = list.get(i);
+				String cityName = startAdd.getString("cityName").toString();
+				String areaName = startAdd.getString("areaName").toString();
+				String countryName = startAdd.getString("countryName").toString();
+				
+				strId =cityName+areaName+countryName;
+			}
+			return strId;
+		}
+		
+		//修改里程
+		public PageData updataDistance(PageData param) throws Exception {
+			PageData uDistance = new PageData();
+			uDistance.put("id", param.getInt("id"));
+			uDistance.put("distance", param.getString("distance"));
+			uDistance.put("addKm", param.getInt("addKm"));
+			uDistance.put("addMuch", param.getInt("addMuch"));
+			return (PageData) dao.update("RouteDistanceMapper.updateDistanceById", uDistance);
+		}
+	
+}

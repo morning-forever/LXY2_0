@@ -1,0 +1,137 @@
+package com.lx.service.app;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.alibaba.fastjson.JSONArray;
+import com.lx.dao.DaoSupport;
+import com.lx.util.PageData;
+import com.lx.util.XConst;
+
+@Service
+@Transactional
+@SuppressWarnings("unchecked")
+public class DefaultRouteManagerService {
+	
+	@Resource
+	private DaoSupport dao;
+	
+
+	public void addDefaultRoute(PageData pd) throws Exception {
+		dao.save("DefaultRouteManagerMapper.addDefaultRoute",pd);
+	}
+	
+	
+	public void updateDefaultRoute(PageData pd) throws Exception {
+		dao.update("DefaultRouteManagerMapper.updateDefaultRoute",pd);
+	}
+	
+	public PageData getDefaultRouteById(Long id) throws Exception {
+		return (PageData)dao.findForObject("DefaultRouteManagerMapper.getDefRouById", id);
+	}
+	
+	public void logicDelDefRouById(Long id) throws Exception{
+		
+		dao.update("DefaultRouteManagerMapper.logicDelById", id);
+	}
+	
+	public PageData findAdminDefaultRouteList(PageData param) throws Exception {
+		Integer total = (Integer) dao.findForObject("DefaultRouteManagerMapper.getDefaultRouteCount", param);
+		List<PageData> list = (List<PageData>)dao.findForList("DefaultRouteManagerMapper.getDefaultRoute", param);
+		param.clear();
+		param.put("data", list);
+		param.put("recordsTotal", total);
+		param.put("recordsFiltered", total);
+		return param;
+	}
+	
+	
+	/*前端 暂时先不分页*/
+	public PageData findDefaultRouteList(PageData param) throws Exception {
+		PageData res = new PageData();
+		int pageSize = 8;
+		Integer total = (Integer) dao.findForObject("DefaultRouteManagerMapper.getDefaultRouteCount", param);
+		Integer totalPage = total % pageSize == 0 ? total / pageSize : total / pageSize + 1;
+		/*Integer pageNo = (HString.isEmpty(param.getLong("pageNo")) ? 1 : param.getLong("pageNo"));
+		param.put("startLine", (pageNo - 1) * pageSize);
+		param.put("showLine", pageSize);*/
+		List<PageData> list = (List<PageData>) dao.findForList("DefaultRouteManagerMapper.getDefaultRouteList", param);
+		for(int i=0; i<list.size(); i++){
+			
+			String routeIds=list.get(i).getString("route_ids");
+			JSONArray distanceIds = JSONArray.parseArray(routeIds);
+			List<PageData> distances =(List<PageData>) dao.findForList("DistanceMapper.getRouteInfoByIdListdf", distanceIds);
+			
+			//2.1.1 数据经组装后再传到前端
+			List<List<PageData>> routeInfo = new ArrayList<List<PageData>>();
+			
+			int viewNum = distances.size();
+			
+			for(int j=0;j<distanceIds.size();j++){
+				
+				//distanceIds 这个数组有多少个元素，就有多少天，就有多少个List<PageData>
+				List<PageData> dayDistances= new ArrayList<PageData>(); 
+				
+				//每次循环找出一天的所有distance,通过遍历从数据库查出的distances找
+				for(PageData distance : distances){
+					
+					//当数据库查出来的day列的值 = 当前天的序数时，那么该记录（distance）就是当前天的
+					if(distance.getInt("day")==j+1){
+						
+						dayDistances.add(distance);
+					}
+					
+				
+				}
+				routeInfo.add(dayDistances);
+				
+			}
+			list.get(i).put("routeInfo", routeInfo);
+			list.get(i).put("viewNum", viewNum);
+			/*JSONObject json = JSONObject.parseObject(jsonData);
+			JSONArray jsonArray = json.getJSONArray("data");
+			double distanceAll = 0.00;
+			double totalDisatance=0.00;
+			int viewNum=0;
+			for (int j = 0; j < jsonArray.size(); j++) {
+				JSONObject jsonObject = jsonArray.getJSONObject(j);
+				JSONArray jsonParam = jsonObject.getJSONArray(Integer.toString(j+1));
+				for(int k=0; k < jsonParam.size(); k++){
+					JSONObject jsonO = jsonParam.getJSONObject(k);
+					System.out.println("---------kristy--------jsonO="+jsonO);
+					PageData respd = distanceService.getDistance(jsonO.getString("startAddId"), jsonO.getString("endAddId"));
+					distanceAll += respd.getDouble("distance");
+					totalDisatance += distanceAll;
+					viewNum +=1;
+				}
+			}
+			list.get(i).put("json", json);
+			list.get(i).put("totalKM", distanceAll);
+			list.get(i).put("viewNum", viewNum);
+			list.get(i).put("totalDisatance", totalDisatance);*/
+		}
+		
+		res.put("list", list);
+		res.putStatus(XConst.SUCCESS);
+		res.put("totalPage", totalPage);
+		res.put("pageNo", param.getLong("pageNo"));
+		return res;
+	}
+	
+	
+	//修改默认路线公里数
+	public void updateDefaultRouteKM(PageData param) throws Exception {
+		dao.update("DefaultRouteManagerMapper.updateDefaultRouteKM", param);
+	}
+	
+	public Integer getTotalKmById(Long id) throws Exception{
+		return (Integer) dao.findForObject("DefaultRouteManagerMapper.getTotalKmById", id);
+	}
+	
+	
+}

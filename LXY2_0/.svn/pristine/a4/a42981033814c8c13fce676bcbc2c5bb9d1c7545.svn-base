@@ -1,0 +1,638 @@
+﻿<%@ page language="java" import="com.lx.util.XConst" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%
+	String path = request.getContextPath();
+	String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
+%>
+
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta content="text/html">
+<base href="<%=basePath%>">
+<meta name="renderer" content="webkit|ie-comp|ie-stand">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+<!--[if lt IE 9]>
+<script type="text/javascript" src="static/h-ui-lib/html5.js"></script>
+<script type="text/javascript" src="static/h-ui-lib/respond.min.js"></script>
+<script type="text/javascript" src="static/h-ui-lib/PIE_IE678.js"></script>
+<![endif]-->
+<link rel="stylesheet" type="text/css" href="static/h-ui/css/H-ui.css" />
+<link rel="stylesheet" type="text/css" href="static/h-ui-lib/Hui-iconfont/1.0.7/iconfont.css" />
+<link rel="stylesheet" type="text/css" href="static/h-ui-lib/icheck/icheck.css" />
+<link rel="stylesheet" type="text/css" href="static/css/jquery.datetimepicker.css"/>
+<link rel="stylesheet" type="text/css" href="static/app/pc/css/style2.0.css"/>
+
+<!--[if lt IE 9]>
+<link href="static/h-ui/css/H-ui.ie.css" rel="stylesheet" type="text/css" />
+<![endif]-->
+<!--[if IE 6]>
+<script type="text/javascript" src="static/h-ui-lib/DD_belatedPNG_0.0.8a-min.js" ></script>
+<script>DD_belatedPNG.fix('*');</script>
+<![endif]-->
+<title>我的订单</title>
+<meta name="keywords" content="">
+<meta name="description" content="">
+</head>
+<body>
+<header class="navbar-wrapper">
+	<jsp:include page="../../common/header.jsp"></jsp:include>
+</header>
+
+<section class="container">
+	<div class="panel panel-default mt-40">
+		<div class="panel-header">我的订单</div>
+		<div class="panel-body">
+			<div class="status-tab" id="s-tab">
+				<div class="status-tabBar cl" id="s-tabBar">
+					<ul>
+						<li class="f-l">全部订单</li>
+						<li class="f-l">审核中</li>
+						<li class="f-l">待付款</li>
+						<li class="f-l">预定成功</li>
+						<li class="f-l">上团中</li>
+						<li class="f-l">已完成</li>
+						<li class="f-l">已取消</li>
+						<div class="f-r">
+						  	<table>
+								<tbody>
+									<tr>
+										<td>
+											<input type="text" class="input-text text-c" placeholder="开始时间" name="startTime" id="startTime">
+										</td>
+										<td class="pd-10">
+										—
+										</td>
+										<td>
+											<input type="text" class="input-text text-c" placeholder="结束时间" name="endTime" id="endTime">
+										</td>
+										<td>
+											<input id="ok" class="btn btn-green size-S radius ml-20" type="button" value="确定">
+										</td>
+										<td>
+											<input id="clean" class="btn btn-green size-S radius ml-20" type="button" value="清空">
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						 </div>
+					</ul>
+				</div>
+			</div>
+			
+			<div style="display:none;">
+				<div class="panel panel-default mt-20 itemModal">
+					<div class="cl f-14 item-up">
+						<span class="f-l">订单编号:<span id="orderCode">202212151202</span></span>
+						<!-- <span class="f-l ml-10 f-14 va-b">请您在20分钟内支付</span> -->
+						<span class="f-r">下单时间:<span id="orderTime">2016年2月6日</span></span>
+					</div>
+					<div class="cl item-down">
+						<table class="table table-border table-bordered" >
+							<tbody class="text-c">
+								<tr>
+									<td width="20%" id="start-time"></td>
+									<td width="20%" id="route-info"></td>
+									<td width="15%" id="car-info"></td>
+									<td width="10%" id="price"></td>
+									<td width="15%" id="status"></td>
+									<td width="20%" id="">
+										<input type="hidden" id="orderId" value="">
+										<div class="div-btn" id="go-pay" onclick="goPay(this);" style="display:none;">
+											<input type="hidden" id="price" value="">
+											去支付
+										</div>
+										<div class="div-btn" id="cancle-order" onclick="cancelOrder(this);" style="display:none;">
+											取消订单
+										</div>
+										<div class="div-btn" id="delete-order" onclick="deleteOrder(this);" style="display:none;">
+											删除订单
+										</div>
+										<div class="div-btn" id="view-order" onclick="viewOrder(this);">
+											查看订单
+										</div>
+										<div class="div-btn" id="refund-order" onclick="refundOrder(this);" style="display:none;">
+											退款
+										</div>
+										<div class="div-btn" id="prompt-check" onclick="promptCheck(this);" style="display:none;">
+											催审核
+										</div>	
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+			
+			<div id="tab-content" class="mt-40" style="min-height:500px;">
+				<div id="c0" class="panel tab-content" style="display:none;">
+					<div class="panel-header">
+						<ul class="cl text-c">
+							<li style="width:20%;"><span>上团日期</span></li>
+							<li style="width:20%;"><span>行程简述</span></li>
+							<li style="width:15%;"><span>已定车辆</span></li>
+							<li style="width:10%;"><span>租金</span></li>
+							<li style="width:15%;"><span>状态</span></li>	
+							<li style="width:20%;"><span>操作</span></li>
+						</ul>
+					</div>
+					<div id="item-list">
+					</div>
+					<div class="pagination" style="display:none;">
+					</div>
+				</div>
+				
+				<div id="c1" class="panel tab-content" style="display:none;">
+					<div class="panel-header">
+						<ul class="cl text-c">
+							<li style="width:20%;"><span>上团日期</span></li>
+							<li style="width:20%;"><span>行程简述</span></li>
+							<li style="width:15%;"><span>已定车辆</span></li>
+							<li style="width:10%;"><span>租金</span></li>
+							<li style="width:15%;"><span>状态</span></li>	
+							<li style="width:20%;"><span>操作</span></li>
+						</ul>
+					</div>
+					<div id="item-list">
+					</div>
+					<div class="pagination" style="display:none;">
+					</div>
+				</div>
+				
+				<div id="c2" class="panel tab-content" style="display:none;">
+					<div class="panel-header">
+						<ul class="cl text-c">
+							<li style="width:20%;"><span>上团日期</span></li>
+							<li style="width:20%;"><span>行程简述</span></li>
+							<li style="width:15%;"><span>已定车辆</span></li>
+							<li style="width:10%;"><span>租金</span></li>
+							<li style="width:15%;"><span>状态</span></li>	
+							<li style="width:20%;"><span>操作</span></li>
+						</ul>
+					</div>
+					<div id="item-list">
+					</div>
+					<div class="pagination" style="display:none;">
+					</div>
+				</div>
+				
+				<div id="c3" class="panel tab-content" style="display:none;">
+					<div class="panel-header">
+						<ul class="cl text-c">
+							<li style="width:20%;"><span>上团日期</span></li>
+							<li style="width:20%;"><span>行程简述</span></li>
+							<li style="width:15%;"><span>已定车辆</span></li>
+							<li style="width:10%;"><span>租金</span></li>
+							<li style="width:15%;"><span>状态</span></li>	
+							<li style="width:20%;"><span>操作</span></li>
+						</ul>
+					</div>
+					<div id="item-list">
+					</div>
+					<div class="pagination" style="display:none;">
+					</div>
+				</div>
+				
+				<div id="c4" class="panel tab-content" style="display:none;">
+					<div class="panel-header">
+						<ul class="cl text-c">
+							<li style="width:20%;"><span>上团日期</span></li>
+							<li style="width:20%;"><span>行程简述</span></li>
+							<li style="width:15%;"><span>已定车辆</span></li>
+							<li style="width:10%;"><span>租金</span></li>
+							<li style="width:15%;"><span>状态</span></li>	
+							<li style="width:20%;"><span>操作</span></li>
+						</ul>
+					</div>
+					<div id="item-list">
+					</div>
+					<div class="pagination" style="display:none;">
+					</div>
+				</div>
+				
+				<div id="c5" class="panel tab-content" style="display:none;">
+					<div class="panel-header">
+						<ul class="cl text-c">
+							<li style="width:20%;"><span>上团日期</span></li>
+							<li style="width:20%;"><span>行程简述</span></li>
+							<li style="width:15%;"><span>已定车辆</span></li>
+							<li style="width:10%;"><span>租金</span></li>
+							<li style="width:15%;"><span>状态</span></li>	
+							<li style="width:20%;"><span>操作</span></li>
+						</ul>
+					</div>
+					<div id="item-list">
+					</div>
+					<div class="pagination" style="display:none;">
+					</div>
+				</div>
+				
+				<div id="c6" class="panel tab-content" style="display:none;">
+					<div class="panel-header">
+						<ul class="cl text-c">
+							<li style="width:20%;"><span>上团日期</span></li>
+							<li style="width:20%;"><span>行程简述</span></li>
+							<li style="width:15%;"><span>已定车辆</span></li>
+							<li style="width:10%;"><span>租金</span></li>
+							<li style="width:15%;"><span>状态</span></li>	
+							<li style="width:20%;"><span>操作</span></li>
+						</ul>
+					</div>
+					<div id="item-list">
+					</div>
+					<div class="pagination" style="display:none;">
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<jsp:include page="../../common/footer.jsp"></jsp:include>
+	
+<script type="text/javascript" src="static/h-ui-lib/jquery/1.9.1/jquery.min.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/layer/2.1/layer.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/laypage/1.2/laypage.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/My97DatePicker/WdatePicker.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/icheck/jquery.icheck.min.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/bootstrap-Switch/bootstrapSwitch.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/Validform/5.3.2/Validform.min.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/Validform/5.3.2/passwordStrength-min.js"></script>
+<script type="text/javascript" src="static/js/jquery.datetimepicker.js"></script>
+<!-- 收索 -->
+<script language="javascript" type="text/javascript" src="static/h-ui-lib/jQuery.autocomplete/1.1/jquery.autocomplete.js"></script>
+<script type="text/javascript" src="static/h-ui/js/H-ui.js"></script>
+<script type="text/javascript" src="static/app/pc/js/base.js"></script>
+
+<script>
+
+function goPay(obj){
+	var orderId = $(obj).parent().find("#orderId").val();
+	location.href = "lxy/order/payment/"+orderId;
+}
+
+function promptCheck(obj){
+	var orderId = $(obj).parent().find("#orderId").val();
+	layer.msg("催审核信息已发送给系统管理员!请耐心等待!");
+	/* $.post("lxy/pc/user/order/promptCheck/"+orderId,function(res){
+		
+	}); */
+
+}
+
+function deleteOrder(obj){
+	layer.confirm('您确定要删除该订单吗?', {
+			title:['订单删除', 'font-size:16px;'],
+			area: ['420px', '220px'], //宽高
+			btn: ['确定','取消'] 
+		}, 
+		function(){
+			var orderId = $(obj).parent().find("#orderId").val();
+			$.ajax({
+				url : "lxy/order/delOrder/"+orderId,
+				post : "post",
+				success : function(data) {
+					if (data.status == "success") {
+						layer.msg("删除成功!");
+						doSearch(showObj);
+					} else {
+						layer.msg("删除失败!请稍后再试!");
+					}
+				}
+			});
+		}
+	);
+}
+
+function viewOrder(obj){
+	var orderId = $(obj).parent().find("#orderId").val();
+	window.location.href="<%=basePath %>lxy/order/detail/"+orderId+".html";
+}
+
+function cancelOrder(obj){
+	var orderId = $(obj).parent().find("#orderId").val();
+	layer.confirm('您确定要取消该订单吗?', {
+			title:['订单取消', 'font-size:16px;'],
+			area: ['420px', '220px'], //宽高
+			btn: ['确定','取消'] 
+		}, 
+		function(){
+			$.ajax({
+				url : "lxy/order/cancelOrder/"+orderId,
+				post : "post",
+				success : function(data) {
+					if (data.status == "success") {
+						layer.msg("取消成功!");
+						doSearch(showObj);
+					} else {
+						layer.msg("服务器异常!请稍后再试!");
+					}
+				}
+			});
+		}
+	);
+ }
+
+function refundOrder(obj){
+ 	var html = '<div class="panel panel-default">'+
+	'<div class="panel-body">'+
+ 	'<div class="row cl">'+
+	'<label class="form-label col-xs-3">退款原因：</label>'+
+	'<div class="formControls col-xs-8">'+
+	'<textarea id="r-reason" name="" cols="" rows="" class="textarea"  placeholder="说点什么...最少输入10个字符" datatype="*10-500" nullmsg="备注不能为空！" onKeyUp="textarealength(this,500)"></textarea>'+
+	'</div></div></div></div>';
+	layer.open({
+		  type: 1,
+		  skin: 'layui-layer-demo', //样式类名
+		  title:'申请退款',
+		  closeBtn: 1, //不显示关闭按钮
+		  area: ['520px', '240px'], //宽高
+		  anim: 2,
+		  shadeClose: true, //开启遮罩关闭
+		  content: html,
+		  btn: ['确定', '取消'],
+		  yes: function(index, layero){
+			  if ($("#r-reason").val() == '') {
+				  layer.msg("请填写退款原因！");
+				  return;
+			  }
+			  var orderId = $(obj).parent().find("#orderId").val();
+			  var param = {
+	     			"formId" : orderId,
+	     			"personName":"",
+	     			"personPhone":"",
+	     			"bankName":"",
+	     			"bankNo":"",
+	     			"reason":$("#r-reason").val()
+	     		};
+			  
+			  $.post('<%=basePath %>lxy/pc/user/order/saveRefund',param,function(res){
+		 			if(res.status == 'success'){
+		 				layer.msg("申请成功！请耐心等待审核！");
+		 				doSearch(showObj);
+		 			}else{
+		 				layer.msg("申请退款失败！请稍后再试！");
+		 			}
+		 			layer.close(index);
+		 		});
+		  },
+		  btn2: function(index, layero){
+		  }
+	});
+}
+
+var totalPage=0;//总页数
+var pageNo=1;//当前页
+var orderState ="";
+var showObj = $('#c0');
+//查询
+function doSearch(obj){
+	var json = {
+			'pageNo': pageNo,//页码
+			'orderState':orderState//支付状态
+		};
+	$.post("<%=basePath %>lxy/order/listdata",json,function(res){
+		if(res.status == 'success'){
+			$(obj).find("#item-list").empty();
+			$(".pagination").hide();
+			if(Number(res.list.length) != 0){
+				for(var i=0;i<res.list.length;i++){
+					var item = $(".itemModal").clone();
+					
+					item.find("#orderId").val(res.list[i].id);
+					item.find("#orderCode").text(res.list[i].orderCode);
+					item.find("#orderTime").text(new Date(res.list[i].createTime).format("yyyy-MM-dd hh:mm:ss"));
+					
+					item.find("#start-time").text(new Date(res.list[i].startTime).format("yyyy年MM月dd日  hh点mm分"));
+					
+					if(res.list[i].km != undefined){
+						item.find("#route-info").text("全程"+res.list[i].km+"公里,共"+res.list[i].day_num+"天");
+					}else{
+						item.find("#route-info").text("待审核订单，公里数和天数尚未确定");
+					}
+					
+					
+					item.find("#car-info").text("此次行程包含客车"+res.list[i].totalCar+"辆");
+
+					setOrderState(item, res.list[i].orderState);
+					
+					if(res.list[i].price != undefined){
+						item.find("#price").text("￥"+res.list[i].price);
+					}else{
+						item.find("#price").text("待审核订单，价格尚未定");
+					}
+					
+					$(obj).find("#item-list").append(item);
+					$(".itemModal:last").show();
+					$(".itemModal:last").removeClass("itemModal");
+				}
+				totalPage = res.totalPage;
+				pageNo = res.pageNo;
+				initPage();
+			}else{
+				$(obj).find("#item-list").append("<div class='text-c c-999' style='padding:250px; font-size:20px;'>暂无信息</div>");
+			}
+		}
+			
+	});
+}
+
+function initOrderList(){
+	doSearch(showObj);
+}
+
+
+function setOrderState(obj, state){
+	if(state == "WAITPAY"){
+		obj.find("#status").text("待支付");
+		obj.find("#cancle-order").show();
+		obj.find("#go-pay").show();
+	}else if(state=="CLOSED"){
+		obj.find("#status").text("交易关闭");
+		obj.find("#delete-order").show();
+	}else if(state=="PAY_OK"){
+		obj.find("#status").text("已支付");
+		obj.find("#refund-order").show();
+	}else if(state=="REFUNDING"){
+		obj.find("#status").text("退款中");
+	}else if(state=="REFUNDED"){
+		obj.find("#status").text("已退款");
+	}else if(state=="REFUNDING_FAIL"){
+		obj.find("#status").text("退款失败");
+	}else if(state=="FINISH"){
+		obj.find("#status").text("已出车");
+	}else if(state == "CHECKING"){
+		obj.find("#status").text("审核中");
+		obj.find("#prompt-check").show();
+		obj.find("#cancle-order").show();
+	}else if(state == "CHECKFAIL"){
+		obj.find("#status").text("审核失败");
+	}else if(state == "CHECKSUCCESS"){
+		obj.find("#status").text("审核成功");
+		obj.find("#go-pay").show();
+	}else if(state=="<%=XConst.ORDER_STATE.CANCELED%>"){
+		obj.find("#status").text("已取消");
+		obj.find("#delete-order").show();
+	}
+}
+
+function getOrderState(state){
+	if(state == "审核中"){
+		orderState="CHECKING";
+	}else if(state == "待付款"){
+		orderState = "WAITPAY";
+	}else if(state == "预定成功"){
+		orderState="PAY_OK";
+	}else if(state == "上团中"){
+		orderState="FINISH";
+	}else if(state == "已完成"){
+		orderState="FINISH";
+	}else if(state == "已取消"){
+		orderState="<%=XConst.ORDER_STATE.CANCELED%>";
+	}else{
+		orderState="";
+	}
+	
+}
+
+$(function(){
+	//初始化顶部导航
+	$('#myOrder').addClass("current");
+	
+	$('#startTime').datetimepicker({
+		lang:'ch',
+		format:'Y/m/d',
+		timepicker:false
+	});
+	
+	$('#endTime').datetimepicker({
+		lang:'ch',
+		format:'Y/m/d',
+		timepicker:false
+	});
+	
+	$("#ok").click(function(){
+	});
+	
+	
+	$("#clean").click(function(){
+		$('#startTime').val("");
+		$('#endTime').val("");
+	});
+});
+
+
+window.onload=function(){
+	initOrderList();
+	function $(id){return document.getElementById(id)}
+		var tab=$("s-tabBar").getElementsByTagName("ul")[0].getElementsByTagName("li");//顶部菜单
+
+		tab[0].id="tab_active";
+		clearContent(tab.length);
+		$("c"+0).style.display="block";
+		for(var i=0; i<tab.length; i++){
+			tab[i].onclick=function(){
+				pageNo=1;
+				//循环取得当前索引
+				for(var j=0;j<tab.length;j++){
+					tab[j].id="";
+					if(this==tab[j]){
+						tab[j].id="tab_active";
+						clearContent(tab.length);
+						$("c"+j).style.display="block";
+						getOrderState(tab[j].textContent);
+						showObj=$("c"+j);
+						doSearch(showObj);
+					}
+				}
+				return false;
+			}
+		}
+	//清除内容
+	function clearContent(length){
+		for(i=0;i<length;i++){
+			$("c"+i).style.display="none";
+			//$("c"+i).empty();
+ 		}
+	}
+}
+
+function gotoPage(goNo){
+	pageNo = goNo;
+	doSearch(showObj);
+}
+
+function goPage(){
+	pageNo = $("#gotopage").val();
+	if(parseInt(pageNo)>totalPage){
+		$("#gotopage").val(totalPage);
+		modal_alert("输入页数大于当前最大页数",2000);
+	}else{
+		doSearch(showObj);
+	}
+}
+
+function initPage(){
+	$(".pagination").show();
+	$(".pagination").empty();
+	if(pageNo<=1){
+		$(".pagination").append('<a class="disabled" href="javascript:;">上一页</a>');
+	}else{
+		$(".pagination").append('<a href="javascript:;" onclick="gotoPage('+(pageNo-1)+')">上一页</a>');
+	}
+	if(pageNo>3){
+		$(".pagination").append('<a href="javascript:;" onclick="gotoPage(1)">1</a>');
+		$(".pagination").append('<span class="p_text">...</span>');
+	}
+	for(var i=-2;i<3;i++){
+		var thisNo=pageNo+i;
+		if(thisNo>0&&thisNo<=totalPage){
+			if(i==0){
+				$(".pagination").append('<a href="javascript:;" class="current" onclick="gotoPage('+thisNo+')">'+thisNo+'</a>');			
+			}else{
+				$(".pagination").append('<a href="javascript:;" onclick="gotoPage('+thisNo+')">'+thisNo+'</a>');
+			}
+		}
+	}
+	if((totalPage-pageNo)>2){
+		$(".pagination").append('<span class="p_text">...</span>');
+		$(".pagination").append('<a href="javascript:;" onclick="gotoPage('+totalPage+')">'+totalPage+'</a>');
+	}
+	if(pageNo>=totalPage){
+		$(".pagination").append('<a class="disabled" href="javascript:;">下一页</a>');
+	}else{
+		$(".pagination").append('<a href="javascript:;" onclick="gotoPage('+(pageNo+1)+')">下一页</a>');
+	}
+	$(".pagination").append('<input style="width:60px;" id="gotopage" class="gotopage" type="text" value="'+pageNo+'" /> 页');
+	$(".pagination").append('<input style="width:50px;" class="btn btn-green radius size-S ml-20" onclick="goPage()" type="button" value="确定" />');
+}
+
+Date.prototype.format = function(format) {
+    var date = {
+           "M+": this.getMonth() + 1,
+           "d+": this.getDate(),
+           "h+": this.getHours(),
+           "m+": this.getMinutes(),
+           "s+": this.getSeconds(),
+           "q+": Math.floor((this.getMonth() + 3) / 3),
+           "S+": this.getMilliseconds()
+    };
+    if (/(y+)/i.test(format)) {
+           format = format.replace(RegExp.$1, (this.getFullYear() + '').substr(4 - RegExp.$1.length));
+    }
+    for (var k in date) {
+           if (new RegExp("(" + k + ")").test(format)) {
+                  format = format.replace(RegExp.$1, RegExp.$1.length == 1
+                         ? date[k] : ("00" + date[k]).substr(("" + date[k]).length));
+           }
+    }
+    return format;
+}
+</script>
+</body>
+</html>

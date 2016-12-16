@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DefaultRouteManagerMapper">
+	
+	
+
+	<!-- 新增默认路线 -->
+	<insert id="addDefaultRoute" useGeneratedKeys="true" keyProperty="id">
+		insert into lxy_default_route
+		(create_time, content, day_num,km)
+		values
+		(NOW(), #{content}, #{day_num}, #{km})
+	</insert>
+	
+	<update id="logicDelById" parameterType="java.lang.Long">
+		update lxy_default_route set is_valid = 0 where id = #{id}
+	</update>
+	
+	<!--根据id查找默认路线  -->
+	<select id="getDefRouById" parameterType="java.lang.Long" resultType="pd">
+		select * from lxy_default_route where id = #{id}
+	</select>
+	<!-- 修改默认路线 -->
+	<update id="updateDefaultRoute">
+		UPDATE lxy_default_route SET content=#{content}, day_num=#{day_num}, km=#{km}
+		WHERE id = #{id}
+	</update>
+	
+	<select id="getDefaultRouteById" resultType="pd">
+		SELECT * FROM lxy_default_route WHERE id=#{id}
+	</select>
+
+	<select id="getDefaultRoute" resultType="pd">
+		SELECT * FROM lxy_default_route WHERE is_valid = 1
+		<if test=" routeName != null and routeName !='' ">
+			AND content like CONCAT('%', #{routeName},'%')
+		</if>
+		<if test=" dayNum != null and dayNum != '' ">
+			AND day_num=#{dayNum}
+		</if>
+		<if test="orderColumnName !=null and orderColumnName != '' ">
+			ORDER BY ${orderColumnName} ${sortOrder}
+		</if>
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select>
+	
+	<select id="getDefaultRouteCount" resultType="Integer">
+		SELECT count(1) FROM lxy_default_route WHERE is_valid = 1
+		<if test=" routeName != null and routeName !='' ">
+			AND content like CONCAT('%', #{routeName},'%')
+		</if>
+		<if test=" dayNum != null and dayNum != '' ">
+			AND day_num=#{dayNum}
+		</if>
+	</select>
+	
+	<select id="getRouteListByKw" resultType="pd" parameterType="pd">
+		select content,km,day_num as dayNum from lxy_default_route where content like concat('%',#{q},'%') and day_num = #{dayNum}
+	</select>
+	
+	<!--getRouteIdByContentAndDayNum  -->
+	<select id="getRouteByCD" parameterType="pd" resultType="pd">
+		select id,km from lxy_default_route where content = #{route} and day_num = #{dayNum}
+	</select>
+	
+	
+</mapper>

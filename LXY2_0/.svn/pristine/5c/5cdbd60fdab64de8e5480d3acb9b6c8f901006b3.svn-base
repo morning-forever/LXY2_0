@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CarStateMapper">
+	
+	<!--标识一条car_state记录已通知司机(NoticeDriver)  -->
+	<update id="notDri" parameterType="java.lang.Long">
+		update lxy_car_state set is_sms_dri = 1 where id = #{carStaId}
+	</update>
+	
+	<select id="getCarStateCount" resultType="java.lang.Integer">
+		select count(*) from (SELECT lcs.start_time ,lcs.end_time ,lct.`name`,lci.plate_number,sau.`NAME` AS userName FROM `lxy_car_state` lcs 
+		LEFT JOIN lxy_car_info lci ON  lcs.car_id = lci.id 
+		LEFT JOIN lxy_car_type lct ON lci.car_type_id = lct.id
+		LEFT JOIN sys_app_user sau ON lcs.user_id = sau.USER_ID
+		where lcs.is_valid = 1
+		<if test=" startTime != null and startTime != '' ">
+			AND DATE_FORMAT(lcs.`start_time`, '%Y-%m-%d')  = str_to_date(#{startTime} , '%Y-%m-%d') 
+		</if>
+		<if test=" endTime != null and endTime != '' ">
+			AND DATE_FORMAT(lcs.`end_time`, '%Y-%m-%d')  = str_to_date(#{endTime} , '%Y-%m-%d') 
+		</if>
+		<if test=" plateNum != null and plateNum != '' ">
+			AND lci.plate_number like CONCAT('%', #{plateNum},'%')
+		</if>
+		<if test=" carName != null and carName != '' ">
+			AND lct.name like CONCAT('%', #{carName},'%')
+		</if>
+		<if test=" userName != null and userName != '' ">
+			AND sau.NAME like CONCAT('%', #{userName},'%')
+		</if>
+		) t
+	</select>
+	
+	<select id="getCarStateList" resultType="pd">
+		SELECT lcs.start_time as startTime ,lcs.end_time as endTime ,lct.`name` ,lci.plate_number as plateNum,sau.`NAME` as realname FROM `lxy_car_state` lcs 
+		LEFT JOIN lxy_car_info lci ON  lcs.car_id = lci.id 
+		LEFT JOIN lxy_car_type lct ON lci.car_type_id = lct.id
+		LEFT JOIN sys_app_user sau ON lcs.user_id = sau.USER_ID
+		where lcs.is_valid = 1
+		<if test=" startTime != null and startTime != '' ">
+			AND DATE_FORMAT(lcs.`start_time`, '%Y-%m-%d')  = str_to_date(#{startTime} , '%Y-%m-%d') 
+		</if>
+		<if test=" endTime != null and endTime != '' ">
+			AND DATE_FORMAT(lcs.`end_time`, '%Y-%m-%d')  = str_to_date(#{endTime} , '%Y-%m-%d') 
+		</if>
+		<if test=" plateNum != null and plateNum != '' ">
+			AND lci.plate_number like CONCAT('%', #{plateNum},'%')
+		</if>
+		<if test=" carName != null and carName != '' ">
+			AND lct.name like CONCAT('%', #{carName},'%')
+		</if>
+		<if test=" userName != null and userName != '' ">
+			AND sau.NAME like CONCAT('%', #{userName},'%')
+		</if>
+		ORDER BY lcs.`create_time` DESC
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select>
+	
+	<!-- 根据carStateIds 获得车辆的总单价 -->
+	<select id="getPriceByCarStaIds" parameterType="java.util.List" resultType="java.lang.Double">
+		select sum(lct.price) as price from lxy_car_state lcs 
+		left join lxy_car_info lci on lcs.car_id = lci.id 
+		left join lxy_car_type lct on lci.car_type_id = lct.id
+		
+		where lcs.id in 
+		<foreach collection="list" item="carStaId" open="(" close=")" separator=",">
+			#{carStaId}
+		</foreach>
+	</select>
+	
+	<!--为锁车记录设置formId  -->
+	<update id="setFormIdByCarStaIds" parameterType="pd">
+		update lxy_car_state  set form_id = #{orderId} where id in 
+		
+		<foreach collection="carStateIds" item="carStaId" open="(" close=")" separator=",">
+			#{carStaId}
+		</foreach>
+	</update>
+	
+	<!-- 释放车 -->
+	<update id="freeCar" parameterType="java.lang.Long">
+		update lxy_car_state set use_state = 'UNLOCKED' where id=#{id}
+	</update>
+	
+	<!--30分钟没有提交订单就释放掉之前锁定的车辆-->
+	<update id="freeCars">
+		update lxy_car_state set use_state = 'UNLOCKED' where form_id = null and DATE_ADD(create_time, INTERVAL 30 MINUTE) &gt;=NOW();
+	</update>
+</mapper>
+

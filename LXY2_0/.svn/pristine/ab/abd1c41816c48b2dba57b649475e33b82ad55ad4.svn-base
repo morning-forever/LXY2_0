@@ -1,0 +1,297 @@
+package com.lx.service.app;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.lx.bo.LockCar;
+import com.lx.bo.NeedCar;
+import com.lx.dao.DaoSupport;
+import com.lx.exception.CarNotEnoughException;
+import com.lx.util.HString;
+import com.lx.util.PageData;
+import com.lx.util.XConst;
+
+
+@Service
+@Transactional
+@SuppressWarnings("unchecked")
+public class CarManagerService {
+	
+	@Resource
+	private DaoSupport dao;
+	
+	@Resource
+	private DriverService driverService;
+	
+	public List<PageData> getCarType() throws Exception {
+		PageData pd = new PageData();
+		List<PageData> carList= (List<PageData>)dao.findForList("CarManagerMapper.getCarType", pd);
+		
+		return carList;
+	}
+	
+	
+	public List<PageData> getAvailableCar(PageData pd) throws Exception {
+    	List<PageData> carList = (List<PageData>)dao.findForList("CarManagerMapper.getCarInfoByType", pd.getLong("carType"));
+		
+    	//车辆使用类型
+    	System.out.println("--------carUseState------carUseState"+pd.getString("carUseState"));
+    	List<PageData> useCarList = (List<PageData>)dao.findForList("CarManagerMapper.getCarByTT", pd);
+		if(useCarList != null){
+			for(int j=0; j<useCarList.size();j++){
+				for(int k=0; k < carList.size();k++){
+					if(carList.get(k).getLong("carId") == useCarList.get(j).getLong("car_id")){
+						carList.remove(k);
+						break;
+					}
+				}
+			}
+		}
+		Collections.sort(carList, new Comparator<PageData>() {
+            public int compare(PageData arg0, PageData arg1) {
+                return arg0.getLong("tripRate").compareTo(arg1.getLong("tripRate"));
+            }
+        });
+		
+		for(int i=0; i<carList.size(); i++){
+			System.out.println("----lgq_test----- name="+carList.get(i).getString("plateNum"));
+		}
+		
+		return carList;
+	}
+	
+	
+	public Long bindCar(PageData pd) throws Exception {
+		dao.save("CarManagerMapper.insertCarState", pd);
+		Long id=pd.getLong("id");
+		System.out.println("------lgq_test------id="+id);
+		return id;
+	}
+	
+	public void lockCar(String ids) throws Exception{
+		PageData param = new PageData();
+		param.put("carStateIds", ids);
+		param.put("oldState", XConst.CAR_STATE.WAITLOCK.toString());
+		param.put("newState", XConst.CAR_STATE.LOCKED.toString());
+		dao.update("CarManagerMapper.updateCarState", param);
+	}
+	
+	public void updateCarState(PageData pd) throws Exception {
+		dao.update("CarManagerMapper.updateCarState", pd);
+	}
+	
+	public void unBindCar(String ids) throws Exception {
+		PageData param = new PageData();
+		param.put("carStateIds", ids);
+		param.put("oldState", XConst.CAR_STATE.WAITLOCK.toString());
+		param.put("newState", XConst.CAR_STATE.NO.toString());
+		dao.update("CarManagerMapper.updateCarState", param);
+	}
+	
+	
+	public PageData getCarInfoWithLocked(PageData pd) throws Exception {
+		return (PageData)dao.delete("CarManagerMapper.getCarInfoWithLocked", pd);
+	}
+	
+	public List<PageData> getAllAvailableCar(PageData pd) throws Exception{
+		String startTime=pd.getString("startTime");
+		String endTime = pd.getString("endTime");
+		List<PageData> carTypeList = (List<PageData>)dao.findForList("CarManagerMapper.getCarType", pd);
+        
+        for(int i=0; i < carTypeList.size(); i++){
+        	List<PageData> carList = (List<PageData>)dao.findForList("CarManagerMapper.getCarInfoByType1", carTypeList.get(i).getLong("typeId"));
+        	PageData param = new PageData();
+    		param.put("startTime", startTime);
+    		param.put("endTime", endTime);
+    		param.put("carType", carTypeList.get(i).getLong("typeId"));
+    		param.put("carUseState", pd.getString("carUseState"));
+    		
+    		List<PageData> useCarList = (List<PageData>)dao.findForList("CarManagerMapper.getCarByTT", param);
+    		System.out.println("----lgq_test----useCarList="+useCarList);
+    		for(int j=0; j<useCarList.size();j++){
+				for(int k=0; k < carList.size();k++){
+					if(carList.get(k).getLong("carId") == useCarList.get(j).getLong("car_id")){
+						carList.remove(k);
+						break;
+					}
+				}
+			}
+    		
+    		carTypeList.get(i).put("carList", carList);
+    		carTypeList.get(i).put("availableCarNum", carList.size());
+        }
+        
+        return carTypeList;
+	}
+	
+	public List<PageData> getCarByIds(PageData pd) throws Exception{
+		return (List<PageData>)dao.findForList("CarManagerMapper.getCarByIds", pd);
+	}
+	
+	public List<PageData> getCarByIds(String ids) throws Exception{
+		PageData param = new PageData();
+		param.put("carStateIds", ids);
+		return (List<PageData>)dao.findForList("CarManagerMapper.getCarByIds", param);
+	}
+	
+	public List<PageData> getCarUseStateByIds(PageData pd) throws Exception{
+		return (List<PageData>)dao.findForList("CarManagerMapper.getCarUseStateByIds", pd);
+	}
+	
+	public void addCarInfo(PageData pd) throws Exception {
+		dao.save("CarManagerMapper.insertOneCar", pd);
+	}
+	
+	
+	/*获取车辆使用信息
+	 * */
+	public PageData getUseCarList(PageData param) throws Exception{
+		Integer total = (Integer) dao.findForObject("CarStateMapper.getCarStateCount", param);
+		List<PageData> list = (List<PageData>)dao.findForList("CarStateMapper.getCarStateList", param);
+		param.clear();
+		param.put("data", list);
+		param.put("recordsTotal", total);
+		param.put("recordsFiltered", total);
+		return param;
+	}
+	
+	
+	/***************功能函数****************/
+	/*private Date getDateAfter(Date d, int day) { 
+		Calendar now = Calendar.getInstance(); 
+		now.setTime(d); 
+		now.set(Calendar.DATE, now.get(Calendar.DATE) + day); 
+		return now.getTime(); 
+	}*/ 
+	
+	/****************gcy  ***********************/
+	
+	/**
+	 * 获得所有可使用车辆
+	 * @param pd
+	 * @return 所有可使用车辆
+	 * @throws Exception
+	 */
+	public List<PageData> getAvailableCars(PageData pd) throws Exception{
+			
+		List<PageData> carTypeList = (List<PageData>) dao.findForList("CarManagerMapper.getAvailableCars",pd);
+			
+		return carTypeList;
+	}
+	
+
+	/**
+	 * @param lockCar
+	 * @return
+	 * @throws Exception
+	 */
+	public PageData lockCar(LockCar lockCar) throws Exception{
+		
+		PageData res = new PageData();
+		
+		//1.查出具体要分配的车（也就是将要被锁定的车）
+		List<PageData> willBeLockedCars = (List<PageData>) dao.findForList("CarManagerMapper.getWillBeLockedCars", lockCar);
+		
+		//2.判断车是否足够
+		List<NeedCar> needCars = lockCar.getNeedCars();
+		
+		StringBuffer sb = new StringBuffer();
+		for(NeedCar needCar : needCars ){
+			
+			Long typeId = needCar.getTypeId();
+			
+			int actualCount=0;
+			
+			for(PageData pageData : willBeLockedCars){
+				
+				if(typeId == pageData.getLong("typeId")){
+					
+					 actualCount++;
+				}
+			}
+			
+			if(actualCount<needCar.getCount()){//如果当前类型车辆不够，则整理出当前车辆类型“不足”的信息，以备后面传到前端去展示
+				
+				for(PageData pageData : willBeLockedCars){
+					
+					if(typeId == pageData.getLong("typeId")){
+						
+						sb.append(pageData.getString("name")+"已不够"+needCar.getCount()+"辆,只有"+actualCount+"辆了;");
+						
+						break ;
+					}
+					
+				}
+			}
+		}
+		
+		if(!HString.isEmpty(sb.toString())){//如果sb不为空，则说明车辆不够
+			
+			throw new CarNotEnoughException(sb.toString());
+			
+		}
+		
+		//3.批量 锁定车辆
+		lockCar.setWillBeLockedCars(willBeLockedCars);
+		
+		dao.save("CarManagerMapper.lockCars", lockCar);
+		
+		res.put("lockedCars", willBeLockedCars);
+		
+		//4.查出锁车信息的id列表（car_state_ids）,ids查出来的是数组，将其转化为字符串，以逗号分隔（也就是去除[]）
+		List<Long> carStateIds = (List<Long>) dao.findForList("CarManagerMapper.getCarStateIds", lockCar);
+		
+		
+		String carStateIdsStr = carStateIds.toString();
+		carStateIdsStr = carStateIdsStr.substring(1,carStateIdsStr.length()-1);
+		res.put("carStateIds", carStateIdsStr);
+		
+		
+		
+		//5.批量更新车的出行率（其实是出行次数trip_rate+1）
+		dao.update("CarManagerMapper.batchUpdateCarTripRate", willBeLockedCars);
+		
+		
+		
+		return  res;
+	}
+	
+	
+	/*获取车辆信息列表
+	 * */
+	public PageData getCarInfoList(PageData param) throws Exception{
+		Integer total = (Integer) dao.findForObject("CarManagerMapper.getCarInfoListCount", param);
+		List<PageData> list = (List<PageData>)dao.findForList("CarManagerMapper.getCarInfoList", param);
+		param.clear();
+		param.put("data", list);
+		param.put("recordsTotal", total);
+		param.put("recordsFiltered", total);
+		return param;
+	}
+	
+	
+	public void deleteOneCar(Long id) throws Exception{
+		dao.delete("CarManagerMapper.deleteOneCar", id);
+	}
+	
+	public PageData getCarInfoById(Long id) throws Exception{
+		return (PageData) dao.findForObject("CarManagerMapper.getOneCarById", id);
+	}
+	
+	public void updateOneCar(PageData param) throws Exception{
+		dao.update("CarManagerMapper.updateOneCar", param);
+	}
+	
+	public void associateDriver(PageData param) throws Exception{
+		driverService.save(param);
+		dao.update("CarManagerMapper.bindDriver", param);
+	}
+	
+	
+}

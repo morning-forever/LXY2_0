@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DefaultRouteManagerMapper">
+
+	<!-- 新增一天默认路线 -->
+	<insert id="addDefaultRoute">
+		insert into lxy_default_route
+		(create_time, route_name, route_ids, day_num,total_km)
+		values
+		(NOW(), #{routeName}, #{routeIds}, #{dayNum},#{totalKm})
+	</insert>
+	
+	<!-- 修改默认路线 -->
+	<update id="updateDefaultRoute">
+		UPDATE lxy_default_route SET route_name=#{routeName}, route_ids=#{routeIds}, day_num=#{dayNum}
+		WHERE id = #{id}
+	</update>
+	
+	<select id="getDefaultRouteById" resultType="pd">
+		SELECT * FROM lxy_default_route WHERE id=#{id}
+	</select>
+
+	<select id="getDefaultRoute" resultType="pd">
+		SELECT * FROM lxy_default_route WHERE state = 'ADD'
+		<if test=" routeName != null and routeName !='' ">
+			AND route_name like CONCAT('%', #{routeName},'%')
+		</if>
+		<if test=" dayNum != null and dayNum != '' ">
+			AND day_num=#{dayNum}
+		</if>
+		<if test="orderColumnName !=null and orderColumnName != '' ">
+			ORDER BY ${orderColumnName} ${sortOrder}
+		</if>
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select>
+	
+	<select id="getDefaultRouteCount" resultType="Integer">
+		SELECT count(1) FROM lxy_default_route WHERE state = 'ADD'
+		<if test=" routeName != null and routeName !='' ">
+			AND route_name like CONCAT('%', #{routeName},'%')
+		</if>
+		<if test=" dayNum != null and dayNum != '' ">
+			AND day_num=#{dayNum}
+		</if>
+	</select>
+	
+	<!-- 修改默认路线 -->
+	<update id="deleteDefaultRoute">
+		UPDATE lxy_default_route SET state='DEL'
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 修改公里数-->
+	<update id="updateDefaultRouteKM">
+		UPDATE lxy_default_route SET total_km=#{km}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 前端获取 -->
+	<select id="getDefaultRouteList" resultType="pd">
+		SELECT * FROM lxy_default_route WHERE state = 'ADD' AND day_num=#{dayNum}
+	</select>
+	
+	
+	<!-- 根据id获得总公里数 -->
+	<select id="getTotalKmById" parameterType="java.lang.Long" resultType="java.lang.Integer">
+		SELECT total_km  from lxy_default_route where id=#{id}
+	</select>
+	
+</mapper>

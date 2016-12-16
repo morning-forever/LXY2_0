@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="OrderFormMapper">
+	
+	<!-- 获取订单数量,用于生成订单号 -->
+	<select id="getOrderNum" resultType="Integer">
+		SELECT COUNT(*) FROM lxy_order_form;
+	</select>
+	
+<!-- 新增订单 -->
+	<insert id="insertOrderForm" useGeneratedKeys="true" keyProperty="orderFormId">
+		insert into lxy_order_form
+		(create_time, order_type, order_code, pay_type, order_state
+		<if test=" isInvoice != null and isInvoice !='' ">
+		, is_invoice
+		</if>
+		, is_delete, user_id, merch_user_id)
+		values
+		(NOW(), #{orderType}, #{orderCode}, #{payType}, 
+		<if test="routeType == 'DEFAULT' and acOther==null">
+			'WAITPAY'
+		</if>
+		<if test="routeType == 'USER_DEFINED' || acOther !=null">
+			'CHECKING'
+		</if>
+		<if test=" isInvoice != null and isInvoice !='' ">
+		, #{isInvoice}
+		</if>
+		, 0, #{userId}, 0)
+	</insert>
+	
+	<select id="checkOrderState" parameterType="pd" resultType="Integer">
+		SELECT COUNT(*) FROM lxy_order_form WHERE id = #{orderId} AND order_state = #{orderState};
+	</select>
+	
+	<select id="findRealPriceByOrderId" parameterType="pd" resultType="Double">
+		SELECT price FROM lxy_order_form lof
+		LEFT JOIN lxy_order_item loi ON loi.form_id = lof.id
+		WHERE lof.id = #{orderId};
+	</select>
+	
+	<select id="getPayByOrderId" parameterType="pd" resultType="pd">
+		SELECT loi.price, loi.down_payment AS downPayment, 
+		loi.pay_method AS payMethod, lof.order_state AS orderState,
+		lof.order_code AS orderCode,
+		lof.update_time AS updateTime
+		FROM lxy_order_form lof
+		LEFT JOIN lxy_order_item loi ON loi.form_id = lof.id
+		WHERE lof.id = #{orderId};
+	</select>
+	
+	<!-- <select id="findOrderStateByid" parameterType="pd" resultType="pd">
+		SELECT order_state
+		from lxy_order_form
+		where id=#{orderId}
+	</select>
+	
+	<select id="findOrderInfoById" parameterType="pd" resultType="pd">
+		SELECT * FROM lxy_order_form WHERE id=#{orderId}
+	</select> -->
+	
+	<update id="updateOrderState">
+		UPDATE lxy_order_form 
+		SET 
+		order_state = #{newState}
+		<if test=" payOrderId != null and payOrderId != '' ">
+			,pay_type = #{payType}
+			,pay_order_id =#{payOrderId} 
+			,pay_time = NOW()
+		</if>
+		WHERE id = #{orderId} AND order_state = #{oldState};	
+	</update>
+	
+	<!--关闭半小时未支付的订单start  -->
+		<!-- 获取半个小时未支付的订单 所锁定的车辆状态记录id -->
+		<select id="findNotPayOrderInTime" resultType="java.lang.String">
+			SELECT loi.car_ids AS carStateIds FROM lxy_order_item AS loi
+	        LEFT JOIN lxy_order_form AS lof ON  loi.form_id = lof.id 
+	        WHERE lof.order_state = 'WAITPAY' AND DATE_ADD(lof.create_time, INTERVAL 30 MINUTE) &lt; NOW()
+		</select>
+		
+		<!-- 关闭半个小时未支付的订单 -->
+		<update id="closeNotPayOrderInTime">
+			UPDATE `lxy_order_form`  SET `order_state` = 'CLOSED'
+			WHERE `order_state` = 'WAITPAY' AND DATE_ADD(`create_time`, INTERVAL 30 MINUTE) &lt; NOW()
+		</update>
+	<!--关闭半小时未支付的订单end  -->
+
+	<!--关闭审核成功的订单start  -->
+		<!--获取审核成功(CHECKSUCCESS)但24小时后仍尚未支付的订单  所锁定的车辆状态记录id -->
+		<select id="getCS24" resultType="java.lang.String">
+			select  loi.car_ids  from lxy_order_form  lof LEFT JOIN lxy_order_item  loi ON loi.form_id = lof.id 
+				
+			where DATE_ADD(lof.update_time,INTERVAL 24 HOUR) &lt; NOW() AND lof.order_state = 'CHECKSUCCESS'
+		</select>
+		
+		<!--关闭审核成功(CHECKSUCCESS)但24小时后仍尚未支付的订单  -->
+		<update id="closeCS24Order">
+			update lxy_order_form set  order_state = 'CLOSED' 
+			
+			where  DATE_ADD(update_time,INTERVAL 24 HOUR) &lt; NOW() AND order_state = 'CHECKSUCCESS'
+		</update>
+	<!--关闭审核成功的订单end  -->
+	
+	<!--查出后天要发车的订单  -->
+	<select id="getWillStartOrder" resultType="pd">
+		SELECT loi.start_time as startTime,loi.person_phone as personPhone,sau.EMAIL as personEmail FROM lxy_order_item loi 
+
+		LEFT JOIN lxy_order_form lof ON loi.form_id = lof.id
+
+		LEFT JOIN sys_app_user sau ON sau.USER_ID = lof.user_id
+
+		WHERE DATE_ADD(NOW(),INTERVAL 2 DAY) >= loi.start_time  AND NOW() &lt; DATE_SUB(loi.start_time,INTERVAL 1 DAY);
+	</select>
+	
+	<!-- 查询订单列表信息 -->
+	<select id="findOrderList" resultType="pd">
+		SELECT 
+		  lof.`id`,
+		  lof.`create_time`,
+		  lof.`pay_time`,
+		  lof.`order_code`,
+		  lof.`order_state`,
+		  lof.`pay_order_id` AS payOrderId,
+		  lof.is_sms_dri as isSmsDri,
+		  loi.`price`,
+		  loi.`down_payment`,
+		  loi.`start_time`,
+		  loi.`end_time`,
+		  loi.`person_name`,
+		  loi.`person_phone`,
+		  loi.`pay_method`,
+		  loi.`name`,
+		  su.`USERNAME` AS username
+		FROM
+		  `lxy_order_form` AS lof
+		  LEFT JOIN `lxy_order_item` AS loi ON lof.`id` = loi.`form_id`
+		  LEFT JOIN `sys_user` AS su ON su.`USER_ID` = lof.`user_id`
+		WHERE lof.`user_id` = #{userId} 
+		  AND lof.`order_type` = 'default' 
+		  AND lof.is_delete = 0 AND lof.state='ADD'
+		<if test=" orderCode != null and orderCode != '' ">
+			AND lof.`order_code`= #{orderCode}
+		</if>
+		<if test=" payOrderId != null and payOrderId != '' ">
+			AND lof.`pay_order_id`= #{payOrderId}
+		</if>
+		<if test=" orderState != null and orderState != '' ">
+			AND lof.`order_state`= #{orderState}
+		</if>
+		<if test=" orderTime != null and orderTime != '' ">
+			AND DATE_FORMAT(lof.`create_time`, '%Y-%m-%d')  = str_to_date(#{orderTime} , '%Y-%m-%d') 
+		</if>
+		ORDER BY lof.`create_time` DESC
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select>
+	
+	<!-- -->
+	<select id="findOrderListCount" resultType="Integer">
+		SELECT 
+		  count(1)
+		FROM
+		  `lxy_order_form` AS lof 
+		  JOIN `lxy_order_item` AS loi ON lof.`id` = loi.`form_id` 
+		WHERE lof.`user_id` = #{userId} 
+		  AND lof.`order_type` = 'default' 
+		  AND lof.is_delete = 0 AND lof.state='ADD'
+		<if test=" orderCode != null and orderCode != '' ">
+			AND lof.`order_code`= #{orderCode}
+		</if>
+		<if test=" payOrderId != null and payOrderId != '' ">
+			AND lof.`pay_order_id`= #{payOrderId}
+		</if>
+		<if test=" orderState != null and orderState != '' ">
+			AND lof.`order_state`= #{orderState}
+		</if>
+		<if test=" orderTime != null and orderTime != '' ">
+			AND DATE_FORMAT(lof.`create_time`, '%Y-%m-%d')  = str_to_date(#{orderTime} , '%Y-%m-%d') 
+		</if>
+	</select>
+	
+	<!-- 通过订单id获取车辆的状态 -->
+	<select id="getCarStateIdsByFormId" resultType="pd">
+		SELECT loi.car_ids AS ids
+		FROM `lxy_order_form` AS lof 
+		LEFT JOIN `lxy_order_item` AS loi ON lof.`id` = loi.`form_id` 
+		WHERE lof.`id`=#{id}
+	</select>
+
+	
+	<!-- 取消订单 -->
+	<select id="checkCannel" resultType="long">
+		SELECT wof.`id`
+		FROM `lxy_order_form` AS wof 
+		WHERE wof.`order_state`='WAITPAY' AND wof.`id`=#{id}
+	</select>
+	
+	<update id="cannelOrder">
+		UPDATE `lxy_order_form`
+		SET order_state='CLOSED',update_time=NOW()
+		WHERE id=#{id}
+	</update>
+	
+	<!-- 删除订单 -->
+	<select id="checkDelete" resultType="long">
+		SELECT wof.`id`
+		FROM `lxy_order_form` AS wof 
+		WHERE wof.`order_state` in (${allowedOrderType}) AND wof.`id`=#{id}
+	</select>
+	
+	<update id="deleteOrder">
+		UPDATE `lxy_order_form`
+		SET is_delete=1
+		WHERE id=#{id}
+	</update>
+	
+	<!-- 退款 -->
+	<select id="checkRefund" resultType="long">
+		SELECT id
+		FROM lxy_order_form 
+		WHERE order_state in (${orderTypes}) AND id=#{id}
+	</select>
+	
+	<update id="refund">
+		UPDATE lxy_order_form
+		SET order_state='REFUNDING'
+		WHERE id=#{id}
+	</update>
+	
+	<!-- 新增一条退款信息 -->
+	<insert id="addRefund">
+		insert into lxy_order_refund
+		(create_time, person_name, person_phone, bank_name, bank_no, reason, form_id)
+		values
+		(NOW(), #{personName}, #{personPhone}, #{bankName}, #{bankNo}, #{reason}, #{formId})
+	</insert>
+	
+	<!-- 删除退款信息 -->
+	<delete id="deleteRefund">
+		update lxy_order_refund set state = 'DELETE' where form_id = #{formId}
+	</delete>
+	
+	
+	<!-- 查询订单详情 -->
+	<select id="findOrderDetail" resultType="pd">
+		SELECT
+		lof.create_time AS createTime,
+		lof.order_code AS orderCode,
+		lof.pay_order_id AS payOrderId,
+		lof.order_state AS orderState,
+		lof.pay_type AS payType,
+		lof.pay_time AS payTime,
+		
+		loi.name AS routeName,
+		loi.price,
+		loi.total_km AS totalKM,
+		loi.down_payment AS downPayment,
+		loi.pay_method AS payMethod,
+		loi.start_time AS startTime,
+		loi.end_time AS endTime,
+		loi.person_name AS personName,
+		loi.person_phone AS personPhone,
+		loi.car_ids AS stateIds,
+		loi.additional_charges_ids AS addChargesIds,
+		loi.ac_other AS acOther,
+		loi.route_ids AS routeIds,
+		
+		su.`USER_ID` AS userId,
+		su.`USERNAME` AS username,
+		su.`NAME` AS realname
+		
+		FROM lxy_order_form AS lof
+		LEFT JOIN lxy_order_item AS loi ON lof.id = loi.form_id
+		LEFT JOIN sys_app_user AS su ON su.USER_ID = lof.user_id
+		WHERE lof.id = #{orderId}
+	</select>
+	
+	<!-- 前端展示 -->
+	<!-- 查询订单列表信息 -->
+	<select id="getOrderList" resultType="pd">
+		SELECT 
+		  lof.`id`,
+		  lof.`create_time`,
+		  lof.`pay_time`,
+		  lof.`order_code`,
+		  lof.`order_state`,
+		  lof.`pay_order_id` AS payOrderId,
+		  loi.`price`,
+		  loi.`down_payment`,
+		  loi.`start_time`,
+		  loi.`end_time`,
+		  loi.`person_name`,
+		  loi.`total_km` AS totalKM,
+		  loi.`person_phone`,
+		  loi.`pay_method`,
+		  loi.`name`,
+		  loi.`car_ids` AS carStateIds,
+		  loi.`additional_charges_ids` AS addChargesIds,
+		  loi.`route_ids`
+		  
+		FROM
+		  `lxy_order_form` AS lof
+		  LEFT JOIN `lxy_order_item` AS loi ON lof.`id` = loi.`form_id`
+		WHERE lof.`user_id` = #{userId}
+		  AND lof.`order_type` = 'default' 
+		  AND lof.is_delete = 0 AND lof.state='ADD'
+		<if test=" orderCode != null and orderCode != '' ">
+			AND lof.`order_code`= #{orderCode}
+		</if>
+		<if test=" payOrderId != null and payOrderId != '' ">
+			AND lof.`pay_order_id`= #{payOrderId}
+		</if>
+		<if test=" orderState != null and orderState != '' ">
+			AND lof.`order_state`= #{orderState}
+		</if>
+		ORDER BY lof.`create_time` DESC
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select>
+	
+	<!-- -->
+	<select id="getOrderListCount" resultType="Long">
+		SELECT 
+		  count(1)
+		FROM
+		  `lxy_order_form` AS lof 
+		  JOIN `lxy_order_item` AS loi ON lof.`id` = loi.`form_id` 
+		WHERE lof.`user_id` = #{userId} 
+		  AND lof.`order_type` = 'default' 
+		  AND lof.is_delete = 0 AND lof.state='ADD'
+		<if test=" orderCode != null and orderCode != '' ">
+			AND lof.`order_code`= #{orderCode}
+		</if>
+		<if test=" payOrderId != null and payOrderId != '' ">
+			AND lof.`pay_order_id`= #{payOrderId}
+		</if>
+		<if test=" orderState != null and orderState != '' ">
+			AND lof.`order_state`= #{orderState}
+		</if>
+	</select>
+	
+	<!--查询某一个用户的某一页订单  -->
+	<select id="getOrderListByUserId" resultType="pd" parameterType="pd">
+		SELECT 
+			lof.id,						
+			lof.order_code as orderCode,
+			lof.order_state as orderState,
+			loi.start_time as startTime,
+			loi.end_time as endTime,
+			loi.car_ids as carStateIds,
+			loi.route_ids as routeIds,loi.total_km as totalKm, loi.additional_charges_ids as addChargesIds FROM `lxy_order_form` lof 
+			
+			LEFT JOIN lxy_order_item loi ON lof.id = loi.form_id
+		
+		where lof.user_id = #{userId} limit #{startLine},#{showLine} 
+	</select>
+	
+	<!--查询某一个用户的订单总数  -->
+	<select id="getOrdersTotal" resultType="java.lang.Integer" parameterType="java.lang.String">
+	 
+		SELECT 
+			count(*) FROM `lxy_order_form` lof 
+			
+			LEFT JOIN lxy_order_item loi ON lof.id = loi.form_id
+		
+		where lof.user_id = #{userId}
+	</select>
+	
+	
+	
+	
+	<!--获得某一个订单的概况 -->
+	<select id="getOrderGenSitById" resultType="pd" parameterType="java.lang.Long">
+		SELECT 
+			lof.id,	
+			lof.order_state as orderState,					
+			lof.order_code as orderCode,
+			date_format(loi.start_time,'%Y-%m-%d') as startTime,
+			date_format(loi.end_time,'%Y-%m-%d') as endTime,
+			loi.car_ids as carStateIds,
+			loi.route_ids as routeIds,loi.total_km as totalKm, loi.additional_charges_ids as addChargesIds FROM `lxy_order_form` lof 
+			
+			LEFT JOIN lxy_order_item loi ON lof.id = loi.form_id
+		
+		where lof.id=#{orderId} 
+	</select>
+	
+	<!-- 订单已出车,更新状态为FINISH -->
+	<update id="updateToFinish">
+		update lxy_order_form lof LEFT JOIN lxy_order_item loi on loi.form_id = lof.id set lof.order_state = 'FINISH' where loi.start_time &lt; NOW() and lof.order_state = 'PAY_OK'
+		
+	</update>
+	
+	<!-- 获取拒绝退款原因 -->
+	<select id="getRefuseReason" resultType="pd" parameterType="java.lang.Long">
+		SELECT reason
+		FROM lxy_order_examine
+		WHERE form_id=#{orderId}
+	</select>
+	
+	<select id="getDriNamsAndTelByCarStaIds" parameterType="pd" resultType="pd">
+		select  ld.name,ld.tel,lcs.start_time as startTime from lxy_driver ld 
+		
+		LEFT JOIN lxy_car_info lci ON ld.id = lci.driver_id
+		LEFT JOIN lxy_car_state lcs ON lci.id= lcs.car_id  where lcs.id in(${ids})
+	</select>
+	
+	<!--订单已通知司机-->
+	<update id="alrSmsDri" parameterType="java.lang.Long" >
+		update lxy_order_form set is_sms_dri = 1 where id = #{formId}
+	</update>
+	
+</mapper>

@@ -1,0 +1,98 @@
+package com.lx.controller.app.mobile;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.lx.controller.base.BaseController;
+import com.lx.entity.home.Area;
+import com.lx.entity.home.City;
+import com.lx.entity.home.Country;
+import com.lx.service.app.AddressService;
+import com.lx.util.PageData;
+import com.lx.util.XConst;
+
+@Controller("mobileAddressController")
+@RequestMapping("mobile/address")
+public class AddressController extends BaseController{
+	
+	@Resource
+	private AddressService addressService;
+
+	@RequestMapping("getInitAddrs")
+	@ResponseBody
+	public PageData getInitAddress(){
+		
+		PageData res = new PageData();
+		
+		try {
+			
+			List<City> cityList = addressService.getAllCities();
+			res.put("cityList",cityList);
+			
+			//查出贵阳市的所有区/县
+			List<Area> initAreaList = addressService.getAreasByCityId("00");
+			res.put("initAreaList", initAreaList);
+			
+			//查出贵阳市南明区的所有景点
+			List<Country> initCountryList = addressService.getCountriesByAreaId("000001");
+			res.put("initCountryList", initCountryList);
+			res.putMessage(XConst.SUCCESS);
+		
+		} catch (Exception e) {
+			res.clear();
+			res.putMessage(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		
+		return res;
+		
+	}
+	
+	@RequestMapping("areaList/{cityId}")
+	@ResponseBody
+	public PageData getAreaListByCityId(@PathVariable String cityId){
+		
+		PageData res = new PageData();
+		
+		try {
+			
+			List<Area> areaList = addressService.getAreasByCityId(cityId);
+			res.putMessage(XConst.SUCCESS);
+			res.put("areaList", areaList);
+			
+		} catch (Exception e) {
+			res.clear();
+			res.putMessage(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		
+		return res;
+	}
+	
+	@RequestMapping("countryList/{areaId}")
+	@ResponseBody
+	public PageData getCountryListByAreaId(@PathVariable String areaId){
+		
+		PageData res = new PageData();
+		
+		try {
+		
+			List<Country> countryList = addressService.getCountriesByAreaId(areaId);
+			res.putMessage(XConst.SUCCESS);
+			res.put("countryList", countryList);
+			
+		} catch (Exception e) {
+			res.clear();
+			res.putMessage(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		
+		return res;
+	}
+}

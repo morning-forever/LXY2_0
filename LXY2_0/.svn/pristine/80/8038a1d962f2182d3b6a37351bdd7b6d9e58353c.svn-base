@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="RouteAddressMapper">
+	
+
+	<resultMap type="com.lx.entity.home.City" id="cityMap">
+		<id column="id" property="id"/>
+		<result column="cityId" property="cityId"/>
+		<result column="cityName" property="cityName"/>
+		
+	</resultMap>
+	
+	<resultMap type="com.lx.entity.home.Area" id="areaMap">
+		<id column="id" property="id"/>
+		<result column="areaId" property="areaId"/>
+		<result column="areaName" property="areaName"/>
+		<result column="cityId" property="cityId"/>
+	</resultMap>
+	
+	<resultMap type="com.lx.entity.home.Country" id="countryMap">
+		<id column="id" property="id"/>
+		<result column="countryId" property="countryId"/>
+		<result column="countryName" property="countryName"/>
+		<result column="areaId" property="areaId"/>
+		<result column="has_hotel" property="hasHotel"/>
+	</resultMap>
+	
+	<!-- 查询所有市 -->
+	<select id="getAllcities" resultMap="cityMap">
+		select * from lxy_city
+	</select>
+	
+	<!-- 根据市ID查询县 -->
+	<select id="getAreasByCityId" resultMap="areaMap">
+		select * from lxy_area where cityId=#{cityId}
+	</select>
+	
+	<!-- 根据县ID查询地点 -->
+	<select id="getCountriesByAreaId" resultMap="countryMap">
+		select * from lxy_country where areaid=#{areaId}
+	</select>
+	
+	<!-- 根据ID查询市 -->
+	<select id="getCityById" resultMap="cityMap">
+		select * from lxy_city where cityId=#{cityId}
+	</select>
+	
+	<!-- 根据ID查询县 -->
+	<select id="getAreaById" resultMap="areaMap">
+		select * from lxy_area where areaId=#{areaId}
+	</select>
+	
+	<!-- 根据ID查询地点 -->
+	<select id="getCountryById" resultMap="countryMap">
+		select * from lxy_country where countryId=#{countryId}
+	</select>
+
+	<!-- 根据ID查询地点 -->
+	<select id="getName" resultType="pd">
+		select countryName, areaName, cityName
+		FROM lxy_country  AS lc
+		left join lxy_area AS la ON la.areaId =#{areaId}
+		left join lxy_city AS lci on lci.cityId = #{cityId}
+		where lc.countryId=#{countryId} 
+	</select>
+	
+</mapper>

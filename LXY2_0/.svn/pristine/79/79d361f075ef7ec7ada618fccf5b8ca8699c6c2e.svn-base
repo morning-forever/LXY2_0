@@ -1,0 +1,245 @@
+package com.lx.controller.app.mobile;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.alibaba.fastjson.JSONArray;
+import com.lx.controller.base.BaseController;
+import com.lx.service.app.AdditionalChargesService;
+import com.lx.service.app.CarManagerService;
+import com.lx.service.app.DistanceService;
+import com.lx.service.app.OrderFormService;
+import com.lx.util.DateUtil;
+import com.lx.util.HString;
+import com.lx.util.PageData;
+import com.lx.util.XConst;
+
+@Controller("mobileOrderController")
+@RequestMapping("mobile/order")
+public class OrderController extends BaseController{
+	
+	
+	@Resource
+	private OrderFormService orderFormService;
+	
+	@Resource
+	private DistanceService distanceService;
+	
+	@Resource
+	private CarManagerService carManagerService;
+	
+	@Resource
+	private AdditionalChargesService additionalChargesService;
+
+	@RequestMapping("submit")
+	@ResponseBody
+	public PageData submit(){
+		PageData res = new PageData();
+		
+			
+		PageData pd = super.getPageData();
+		
+		String distanceIds = pd.getString("distanceIds");
+		String carStateIds = pd.getString("carStateIds");
+		String addChargesIds = pd.getString("addChargesIds");
+		String token = pd.getString("oldToken");
+		String userId = pd.getString("userId");
+		String startTime = pd.getString("startTime");
+		String endTime = pd.getString("endTime");
+		String personPhone = pd.getString("personPhone");
+		String personName = pd.getString("personName");
+		String payMethod = pd.getString("payMethod");
+		
+		//1.检查参数是否合格
+		boolean isParamOk = !HString.isEmpty(distanceIds) && !HString.isEmpty(carStateIds) 
+				&& !HString.isEmpty(addChargesIds)  
+				&& !HString.isEmpty(token)
+			 	&& !HString.isEmpty(userId)
+			 	&& !HString.isEmpty(startTime)
+			    && !HString.isEmpty(endTime)
+			    && !HString.isEmpty(personPhone)
+			    && !HString.isEmpty(personName)
+			    && !HString.isEmpty(payMethod);
+	
+		if(isParamOk){
+			
+			//2.如果参数合格，则检查token是否合格
+			res.put("oldToken",token);
+			res.put("userId", userId);
+
+			try {
+						
+				boolean isTokenSuccess = isTokenSuccess(res);
+				
+				//3.如果token不合格，直接返回{message:token_err}
+				if (!isTokenSuccess) {
+					return res;
+				}
+				
+				//4.如果token合格，则继续以下处理
+				long dayDiff = DateUtil.getDaySub(startTime, endTime)+1;
+				
+				pd.put("dayDiff", dayDiff);
+				
+				res = orderFormService.saveOrder(pd);// 请求服务层做处理
+				
+				 // 无异常则成功
+				res.putMessage(XConst.SUCCESS);
+
+			} catch (Exception e) {
+				
+				res.putMessage(XConst.EXCEPTION);
+				e.printStackTrace();
+			}
+
+		}else{
+			res.putMessage(XConst.PARAM_ERR);
+		}
+		
+		return res;
+		
+	}
+	
+	/**
+	 * 获得订单列表数据
+	 * @return
+	 */
+	@RequestMapping("getList")
+	@ResponseBody
+	public PageData  getList(){
+		PageData res = new PageData();
+		
+		PageData pd = super.getPageData();
+		Integer pageNum = pd.getInt("pageNum");
+		String userId = pd.getString("userId");
+		String token = pd.getString("token");
+		
+		//1.检查参数是否合格
+		boolean isParamOk = pageNum!=null 
+				&& !HString.isEmpty(token)
+			 	&& !HString.isEmpty(userId);
+	
+		if(isParamOk){
+			
+			//2.如果参数合格，则检查token是否合格
+			res.put("oldToken",token);
+			res.put("userId", userId);
+
+			try {
+						
+				boolean isTokenSuccess = isTokenSuccess(res);
+				
+				//3.如果token不合格，直接返回{message:token_err}
+				if (!isTokenSuccess) {
+					return res;
+				}
+				
+				//4.如果token合格，则继续以下处理
+				res = orderFormService.getOrderListByUserId(pd);// 请求服务层做处理：查出订单总数，查出该页订单的订单列表
+				
+				 // 无异常则成功
+				res.putMessage(XConst.SUCCESS);
+
+			} catch (Exception e) {
+				
+				res.putMessage(XConst.EXCEPTION);
+				e.printStackTrace();
+			}
+
+		}else{
+			res.putMessage(XConst.PARAM_ERR);
+		}
+		return res;
+	}
+	
+	
+	/**
+	 * 获取某一条订单的详细
+	 * @return
+	 */
+	@RequestMapping("orderDetail")
+	@ResponseBody
+	public PageData getOrderDetail(){
+		
+		PageData res = new PageData();
+		
+		PageData pd = super.getPageData();
+		Long orderId = pd.getLong("orderId");
+		
+		//一、检查参数是否合格
+		boolean isParamOk = orderId!=null;
+	
+		if(isParamOk){
+			
+			//二、如果参数合格，进行查详细处理
+			try {
+				
+				//1.先查出概况（general situation）
+				PageData orderGenSit = orderFormService.getOrderGenSitById(orderId);
+				res.put("orderGenSit", orderGenSit);
+				
+				//2.根据概况里的数据再进行详细查找
+				
+				//2.1. 查出路线详情
+	
+				JSONArray distanceIds = JSONArray.parseArray(orderGenSit.getString("routeIds"));
+				List<PageData> distances = distanceService.getRouteInfoByIdList(distanceIds);
+				
+				//2.1.1 数据经组装后再传到前端
+				List<List<PageData>> routeInfo = new ArrayList<List<PageData>>();
+				
+				for(int i=0;i<distanceIds.size();i++){
+					
+					//distanceIds 这个数组有多少个元素，就有多少天，就有多少个List<PageData>
+					List<PageData> dayDistances= new ArrayList<PageData>(); 
+					
+					//每次循环找出一天的所有distance,通过遍历从数据库查出的distances找
+					for(PageData distance : distances){
+						
+						//当数据库查出来的day列的值 = 当前天的序数时，那么该记录（distance）就是当前天的
+						if(distance.getInt("day")==i+1){
+							
+							dayDistances.add(distance);
+							
+						}
+					
+					}
+					routeInfo.add(dayDistances);
+					
+				}
+				
+				//组装完毕，组装结果是List<List<PageData>>  routeInfo,将此数据传到前端
+				res.put("routeInfo", routeInfo);
+				
+				
+				//2.2  查出车辆详情
+				String carStateIds = orderGenSit.getString("carStateIds");
+				List<PageData> carList = carManagerService.getCarByIds(carStateIds);
+				res.put("carList", carList);
+				
+				//2.3 查出附加体验
+				List<PageData> addChargesList = additionalChargesService.getAdditionalChargesByIds(orderGenSit);
+				res.put("addChargesList", addChargesList);
+				
+				 // 无异常则成功
+				res.putMessage(XConst.SUCCESS);
+
+			} catch (Exception e) {
+				
+				res.putMessage(XConst.EXCEPTION);
+				e.printStackTrace();
+			}
+
+		}else{
+			res.putMessage(XConst.PARAM_ERR);
+		}
+		return res;
+	}
+	
+}

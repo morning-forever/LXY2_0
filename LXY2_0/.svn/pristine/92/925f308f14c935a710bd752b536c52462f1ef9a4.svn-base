@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="OrderFormMapper">
+	
+	<insert id="saveOrder" parameterType="pd" useGeneratedKeys="true" keyProperty="orderId">
+		INSERT INTO lxy_order_form(create_time,default_route_id,user_defined_route,start_time,
+			end_time,jt_site_id,jt_site,st_site_id,st_site,headcount,remark,km,price,user_id,contact_person,
+			contact_number,guide,guide_contact_number,group_no,current_state,is_need_check)
+		
+		VALUES(NOW(),#{defaultRouteId},#{userDefinedRoute},#{startTime},#{endTime},#{jtSiteId},#{jtSite},
+			#{stSiteId},#{stSite},#{headcount},#{remark},#{km},#{price},#{userId},#{contactPerson},#{contactNumber},
+			#{guide},#{guideContactNumber},#{groupNo},#{currentState},#{isNeedCheck})
+	</insert>
+	
+	<select id="getMaxId" resultType="java.lang.Long">
+		select max(id) from lxy_order_form
+	</select>
+	
+	<!--为一个订单 设置订单号  -->
+	<update id="setOrderCode" parameterType="pd">
+		update lxy_order_form set order_code = #{orderCode}
+	</update>
+	
+	<!--查询某一个用户的订单总数  -->
+	<select id="getOrdersTotal" resultType="java.lang.Integer" parameterType="java.lang.String">
+		SELECT 
+			count(*) FROM `lxy_order_form` lof 
+			
+			LEFT JOIN lxy_order_item loi ON lof.id = loi.form_id
+		
+		where lof.user_id = #{userId}
+	</select>
+	
+	
+	
+	
+	<!--获得某一个订单的概况 -->
+	<select id="getOrderGenSitById" resultType="pd" parameterType="java.lang.Long">
+		SELECT 
+			lof.id,	
+			lof.order_state as orderState,					
+			lof.order_code as orderCode,
+			date_format(loi.start_time,'%Y-%m-%d') as startTime,
+			date_format(loi.end_time,'%Y-%m-%d') as endTime,
+			loi.car_ids as carStateIds,
+			loi.route_ids as routeIds,loi.total_km as totalKm, loi.additional_charges_ids as addChargesIds FROM `lxy_order_form` lof 
+			
+			LEFT JOIN lxy_order_item loi ON lof.id = loi.form_id
+		
+		where lof.id=#{orderId} 
+	</select>
+	
+	<!-- 订单已出车,更新状态为FINISH -->
+	<update id="updateToFinish">
+		update lxy_order_form lof LEFT JOIN lxy_order_item loi on loi.form_id = lof.id set lof.order_state = 'FINISH' where loi.start_time &lt; NOW() and lof.order_state = 'PAY_OK'
+		
+	</update>
+	
+	<!-- 获取拒绝退款原因 -->
+	<select id="getRefuseReason" resultType="pd" parameterType="java.lang.Long">
+		SELECT reason
+		FROM lxy_order_examine
+		WHERE form_id=#{orderId}
+	</select>
+	
+	<select id="getDriNamsAndTelByCarStaIds" parameterType="pd" resultType="pd">
+		select  ld.name,ld.tel,lcs.start_time as startTime from lxy_driver ld 
+		
+		LEFT JOIN lxy_car_info lci ON ld.id = lci.driver_id
+		LEFT JOIN lxy_car_state lcs ON lci.id= lcs.car_id  where lcs.id in(${ids})
+	</select>
+	
+	<!--订单已通知司机-->
+	<update id="alrSmsDri" parameterType="java.lang.Long" >
+		update lxy_order_form set is_sms_dri = 1 where id = #{formId}
+	</update>
+	
+</mapper>

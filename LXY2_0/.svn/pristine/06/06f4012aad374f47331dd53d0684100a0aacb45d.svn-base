@@ -1,0 +1,62 @@
+package com.lx.service.app;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.lx.dao.DaoSupport;
+import com.lx.util.PageData;
+
+
+@Service
+@Transactional
+@SuppressWarnings("unchecked")
+public class AddSvcService {
+	
+	@Resource
+	private DaoSupport dao;
+	
+	/**
+	 * 通过关键字(key words)获取接送团地点列表
+	 * @param kw
+	 * @return
+	 * @throws Exception 
+	 */
+	public List<PageData> getAddSvcListByKw(String kw) throws Exception{
+		return (List<PageData>) dao.findForList("AddSvcMapper.getAddSvcListByKw", kw);
+	}
+	
+	
+	public void addOneAddSvc(PageData pd) throws Exception {
+		dao.save("AddSvcMapper.addOneAddSvc", pd);
+	}
+	
+	public void lgcDelAddSvc(Long id) throws Exception {
+		dao.update("AddSvcMapper.lgcDelAddSvc", id);
+	}
+	
+	public void updateAddSvc(PageData pd) throws Exception {
+		dao.save("AddSvcMapper.updateOneAddSvc", pd);
+	}
+	
+	
+	/*后台获取附加信息列表
+	 * */
+	
+	public PageData getAddSvcById(Long id) throws Exception {
+		return (PageData)dao.findForObject("AddSvcMapper.getAddSvcById", id);
+	}
+	
+	public PageData getAddSvcList(PageData param) throws Exception{
+		Integer total = (Integer) dao.findForObject("AddSvcMapper.getAddSvcCount", param);
+		List<PageData> list = (List<PageData>)dao.findForList("AddSvcMapper.getAddSvcList", param);
+		param.clear();
+		param.put("data", list);
+		param.put("recordsTotal", total);
+		param.put("recordsFiltered", total);
+		return param;
+	}
+}

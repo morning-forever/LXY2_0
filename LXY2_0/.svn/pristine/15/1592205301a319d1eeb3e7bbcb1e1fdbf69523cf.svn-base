@@ -1,0 +1,387 @@
+package com.lx.controller.app.pc;
+
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.session.Session;
+import org.apache.shiro.subject.Subject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.propertyeditors.CustomDateEditor;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.lx.controller.base.BaseController;
+import com.lx.entity.system.User;
+import com.lx.service.app.CarManagerService;
+import com.lx.util.Const;
+import com.lx.util.PageData;
+import com.lx.util.XConst;
+/** 
+ * 类名称：
+ * 创建人： 
+ * 创建时间：
+ */
+@Controller
+@RequestMapping(value="/lxy/car")
+public class CarManagerController extends BaseController {
+	
+	@Autowired
+	private CarManagerService carManagerService;
+	
+	
+	private final static String[] CAR_USER_STATE=new String[]{"WAITLOCK","LOCKED","BINDROUTE"};
+	
+	/**
+	 * 列表
+	 */
+	@RequestMapping(value="/reservation/index")
+	public ModelAndView list(){
+		ModelAndView mv = this.getModelAndView();
+		PageData pd = new PageData();
+		try{
+			pd = this.getPageData();
+			String KEYWORD = pd.getString("KEYWORD");
+			System.out.println("----------lgq------------ KEYWORD="+KEYWORD);
+			if(null != KEYWORD && !"".equals(KEYWORD)){
+				pd.put("KEYWORD", KEYWORD.trim());
+			}
+			
+			List<PageData> carList = carManagerService.getCarType();
+			mv.addObject("carList", carList);
+			
+			
+			
+			mv.setViewName("app/pc/reservation_car");
+			mv.addObject("pd", pd);
+			mv.addObject(Const.SESSION_QX,this.getHC());	//按钮权限
+		} catch(Exception e){
+			logger.error(e.toString(), e);
+		}
+		return mv;
+	}
+	
+	/**
+	 * 
+	 * */
+	@RequestMapping(value="/getCar" ,produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public PageData getCar() throws Exception{
+		PageData res = new PageData();
+		try{
+			PageData pageData = super.getPageData();
+			long diff = 0;
+			//shiro管理的session
+			Subject currentUser = SecurityUtils.getSubject();  
+			Session session = currentUser.getSession();
+			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+			
+			List<PageData> carInfoList = new ArrayList<PageData>();
+			String jsonData=pageData.getString("jsonData");
+			String startTime = pageData.getString("startTime");
+			String endTime = pageData.getString("endTime");
+			
+			User user = (User)session.getAttribute(Const.APP_USER);
+			if (user != null) {
+				long start = 0;
+		        long end = 0; 
+		        try {
+		            start = df.parse(startTime).getTime();  
+		            end = df.parse(endTime).getTime();
+		        } catch (ParseException e) {  
+		            e.printStackTrace();  
+		        }  
+		        diff = (end - start) / (1000 * 60 * 60 * 24) + 1;
+
+				JSONObject json = JSONObject.parseObject(jsonData);
+				JSONArray jsonArray = json.getJSONArray("data");
+				for (int i = 0; i < jsonArray.size(); i++) {
+					JSONObject jsonObject = jsonArray.getJSONObject(i);
+					PageData carInfoData = new PageData();
+					carInfoData.put("startTime", startTime);
+					carInfoData.put("endTime", endTime);
+					carInfoData.put("carType", jsonObject.get("carType"));
+					carInfoData.put("carNum", jsonObject.get("carNum"));
+					String carUseState = getTypes(CAR_USER_STATE);
+					carInfoData.put("carUseState", carUseState);
+					
+					List<PageData> carList = carManagerService.getAvailableCar(carInfoData);
+					if( carInfoData.getInt("carNum") > carList.size()){
+						carInfoList.clear();
+						//所查车数量大于库存
+						//pageData.put("nocar", carInfoData);
+						res.putStatus("NOCAR");
+						return res;
+					}else{
+						for(int j=0; j<carInfoData.getInt("carNum"); j++){
+							carList.get(j).put("userId", user.getUSER_ID());
+							carInfoList.add(carList.get(j));
+						}
+					}
+				}
+			}else{
+				res.putStatus(XConst.UNLOGIN);
+				return res;
+			}
+			
+			for(int i=0;i<carInfoList.size();i++){
+				carInfoList.get(i).put("useState", XConst.CAR_STATE.LOCKED.toString());
+				carInfoList.get(i).put("startTime", startTime);
+				carInfoList.get(i).put("endTime", endTime);
+				Long id = carManagerService.bindCar(carInfoList.get(i));
+				carInfoList.get(i).put("stateId", id);
+			}
+			res.put("carInfoList", carInfoList);
+			res.put("dayNum", diff);
+			res.putStatus(XConst.SUCCESS);
+			
+		}catch (Exception e) {
+			res.putStatus(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+
+		return res;
+	}
+	/**
+	 * 根据日期和车类型返回可用车辆
+	 * */
+	@RequestMapping(value="/selectOk" ,produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public PageData queryCarIsOverplus() throws Exception{
+		PageData res = new PageData();
+		try{
+			PageData pageData = super.getPageData();
+			long diff = 0;
+			//shiro管理的session
+			Subject currentUser = SecurityUtils.getSubject();  
+			Session session = currentUser.getSession();
+			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+			
+			List<PageData> carInfoList = new ArrayList<PageData>();
+			String jsonData=pageData.getString("jsonData");
+			String startTime = pageData.getString("startTime");
+			String endTime = pageData.getString("endTime");
+			
+			User user = (User)session.getAttribute(Const.APP_USER);
+			if (user != null) {
+				long start = 0;
+		        long end = 0; 
+		        try {
+		            start = df.parse(startTime).getTime();  
+		            end = df.parse(endTime).getTime();
+		        } catch (ParseException e) {  
+		            e.printStackTrace();  
+		        }  
+		        diff = (end - start) / (1000 * 60 * 60 * 24) + 1;
+
+				JSONObject json = JSONObject.parseObject(jsonData);
+				JSONArray jsonArray = json.getJSONArray("data");
+				for (int i = 0; i < jsonArray.size(); i++) {
+					JSONObject jsonObject = jsonArray.getJSONObject(i);
+					PageData carInfoData = new PageData();
+					carInfoData.put("startTime", startTime);
+					carInfoData.put("endTime", endTime);
+					carInfoData.put("carType", jsonObject.get("carType"));
+					carInfoData.put("carNum", jsonObject.get("carNum"));
+					String carUseState = getTypes(CAR_USER_STATE);
+					carInfoData.put("carUseState", carUseState);
+					
+					List<PageData> carList = carManagerService.getAvailableCar(carInfoData);
+					if( carInfoData.getInt("carNum") > carList.size()){
+						carInfoList.clear();
+						//所查车数量大于库存
+						pageData.put("nocar", carInfoData);
+						pageData.put("status", "NOCAR");
+						return pageData;
+					}else{
+						for(int j=0; j<carInfoData.getInt("carNum"); j++){
+							
+							carList.get(j).put("userId", user.getUSER_ID());
+							carInfoList.add(carList.get(j));
+							System.out.println("---------CarManagerController--------carInfoList="+carInfoList);
+						}
+					}
+				}
+				
+			}else{
+				res.put("status", "NOLOGIN");
+				return res;
+			}
+			
+			for(int i=0;i<carInfoList.size();i++){
+				carInfoList.get(i).put("useState", XConst.CAR_STATE.WAITLOCK.toString());
+				carInfoList.get(i).put("startTime", startTime);
+				carInfoList.get(i).put("endTime", endTime);
+				Long id = carManagerService.bindCar(carInfoList.get(i));
+				carInfoList.get(i).put("stateId", id);
+			}
+			res.put("carInfoList", carInfoList);
+			res.put("dayNum", diff);
+			res.put("status", "SUCCESS");
+			
+			System.out.println("--------lgq_test last-------carInfoList="+carInfoList);
+			
+		}catch (Exception e) {
+			res.put("status", "ERROR");
+			e.printStackTrace();
+		}
+
+		return res;
+	}
+	
+	/**
+	 * 在1分钟内确定是否要使用该车辆
+	 * */
+	@RequestMapping(value="/lock" ,produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public PageData locking() throws Exception{
+		PageData res = new PageData();
+		try{
+			PageData pageData = super.getPageData();
+			//shiro管理的session
+			Subject currentUser = SecurityUtils.getSubject();  
+			Session session = currentUser.getSession();
+		
+			User user = (User)session.getAttribute(Const.APP_USER);
+			if (user != null) {
+				String ids=pageData.getString("ids");
+				System.out.println("----lgq_test-----ids="+ids);
+				List<PageData> list = carManagerService.getCarUseStateByIds(pageData);
+				for(int i=0; i<list.size(); i++){
+					if(list.get(i).getString("state").equals(XConst.CAR_STATE.OVERTIMEL.toString())){
+						res.putStatus("overtime");
+						return res;
+					}
+					/*if(list.get(i).getString("state").equals("DEL")){
+						res.putStatus("overtime");
+						return res;
+					}*/
+				}
+				carManagerService.lockCar(ids);
+				/*pageData.put("useState", XConst.CAR_STATE.LOCKED.toString());
+				carManagerService.updateCarState(pageData);*/
+				res.putStatus(XConst.SUCCESS);
+			}else{
+				res.putStatus(XConst.UNLOGIN);
+			}
+			
+		}catch (Exception e) {
+			res.putStatus(XConst.FAIL);
+			e.printStackTrace();
+		}
+
+		return res;
+	}
+	
+	/**
+	 * */
+	@RequestMapping(value="/unlock" ,produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public PageData unlock() throws Exception{
+		PageData pageData = super.getPageData();
+		try{
+			//shiro管理的session
+			Subject currentUser = SecurityUtils.getSubject();  
+			Session session = currentUser.getSession();
+			
+			User user = (User)session.getAttribute(Const.APP_USER);
+			if (user != null) {
+				carManagerService.unBindCar(pageData.getString("ids"));
+				//carManagerService.deleteLockenCar(pageData);
+				pageData.put("status", "SUCCESS");
+			}else{
+				pageData.put("status", "NOLOGIN");
+			}
+			
+		}catch (Exception e) {
+			pageData.put("status", "ERROR");
+			e.printStackTrace();
+		}
+
+		return pageData;
+	}
+	
+	/**
+	 * 可选择车辆列表
+	 */
+	/*@RequestMapping(value="/select")
+	public ModelAndView goSendSms() throws Exception{
+		ModelAndView mv = this.getModelAndView();
+		PageData pd = new PageData();
+		pd = this.getPageData();
+		List<PageData> carList = carManagerService.getAllAvailableCar(pd);
+		mv.addObject("carList", carList);
+		mv.addObject("startTime",pd.getString("startTime"));
+		mv.addObject("endTime",pd.getString("endTime"));
+		mv.setViewName("lxy/select_car");
+		return mv;
+	}*/
+	
+	@RequestMapping(value="/selectcar")
+	@ResponseBody
+	public PageData selectcar() throws Exception{
+		PageData res = new PageData();
+		try{
+			PageData pd = this.getPageData();
+			
+			String carUseState = getTypes(CAR_USER_STATE);
+			pd.put("carUseState", carUseState);
+			
+			//List<PageData> carList = carManagerService.getAllAvailableCar(pd);
+			List<PageData> carList = carManagerService.getAvailableCars(pd);
+			
+			res.put("carList", carList);
+			res.put("startTime",pd.getString("startTime"));
+			res.put("endTime",pd.getString("endTime"));
+			res.putStatus(XConst.SUCCESS);
+			
+		}catch (Exception e) {
+			res.putStatus(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		
+		return res;
+	}
+	
+	
+
+	//返回指定类型订单字符串拼接
+	private String getTypes(String[] arr) {
+		StringBuffer typeBuffer=new StringBuffer();
+		for (int i = 0; i < arr.length; i++) {
+			typeBuffer.append("'");
+			typeBuffer.append(arr[i]);
+			typeBuffer.append("'");
+			typeBuffer.append(",");
+		}
+		
+		return typeBuffer.substring(0, typeBuffer.lastIndexOf(","));
+	}
+	
+	
+	/* ===============================权限================================== */
+	@SuppressWarnings("unchecked")
+	public Map<String, String> getHC(){
+		Subject currentUser = SecurityUtils.getSubject();  //shiro管理的session
+		Session session = currentUser.getSession();
+		return (Map<String, String>)session.getAttribute(Const.SESSION_QX);
+	}
+	/* ===============================权限================================== */
+	
+	@InitBinder
+	public void initBinder(WebDataBinder binder){
+		DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+		binder.registerCustomEditor(Date.class, new CustomDateEditor(format,true));
+	}
+}

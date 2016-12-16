@@ -1,0 +1,104 @@
+package com.lx.controller.app.pc;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.lx.controller.base.BaseController;
+import com.lx.entity.home.Area;
+import com.lx.entity.home.City;
+import com.lx.entity.home.Country;
+import com.lx.service.app.AddressService;
+import com.lx.service.app.DistanceService;
+import com.lx.util.PageData;
+import com.lx.util.XConst;
+
+@Controller
+@RequestMapping(value = "pc/address")
+public class AddressController extends BaseController {
+	
+	@Resource
+	private AddressService addressService;
+	
+	@Resource
+	private DistanceService distanceService;
+	
+	@RequestMapping(value="getCity",produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public PageData getCity() throws Exception{
+		PageData map=new PageData();
+		try {
+			List<City> cityList=addressService.getAllCities();
+			map.put("cityList", cityList);
+			
+			map.putStatus(XConst.SUCCESS);
+		} catch (Exception e) {
+			map.putStatus(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		return map;
+	}
+	
+
+	@RequestMapping(value="getAreas/{cityId}",produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public PageData getAreas(@PathVariable String cityId) throws Exception{
+		
+		PageData map=new PageData();
+		try {
+			List<Area> areasList=addressService.getAreasByCityId(cityId);
+			map.put("areasList", areasList);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return map;
+	}
+	
+	@RequestMapping(value="getCountries/{areaId}",produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public PageData getCountry(@PathVariable String areaId) throws Exception{
+		
+		PageData map=new PageData();
+		try {
+			List<Country> countryList=addressService.getCountriesByAreaId(areaId);
+			map.put("countryList", countryList);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return map;	
+	}
+	
+	@RequestMapping(value="getDistance")
+	@ResponseBody
+	public PageData getDistance() throws Exception{
+		PageData pd = this.getPageData();
+		PageData res = new PageData();
+		String startAddId = pd.getString("startAddId");
+		String endAddId = pd.getString("endAddId");
+		try{
+			res = distanceService.getDistance(startAddId, endAddId);
+			if(res != null){
+				res.putStatus(XConst.SUCCESS);
+			}else{
+				distanceService.addA2BDistance(startAddId, endAddId);
+				res = distanceService.getDistance(startAddId, endAddId);
+				//res.putStatus("NOFOUND");
+				res.putStatus(XConst.SUCCESS);
+			}
+			
+		}catch (Exception e) {
+			distanceService.addA2BDistance(startAddId, endAddId);
+			res = distanceService.getDistance(startAddId, endAddId);
+			
+			res.putStatus(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+	
+		return res;
+	}
+}

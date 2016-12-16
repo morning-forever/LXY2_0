@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="OrderFormMapper">
+	
+	<insert id="saveOrder" parameterType="pd" useGeneratedKeys="true" keyProperty="orderId">
+		INSERT INTO lxy_order_form(create_time,default_route_id,user_defined_route,start_time,
+			end_time,jt_site_id,jt_site,st_site_id,st_site,headcount,remark,km,price,user_id,contact_person,
+			contact_number,guide,guide_contact_number,group_no,current_state,is_need_check)
+		
+		VALUES(NOW(),#{defaultRouteId},#{route},#{startTime},#{endTime},#{jtSiteId},#{jtSite},
+			#{stSiteId},#{stSite},#{headcount},#{remark},#{km},#{price},#{userId},#{contactPerson},#{contactNumber},
+			#{guide},#{guideContactNumber},#{groupNo},#{currentState},#{isNeedCheck})
+	</insert>
+	
+	
+	<!--为一个订单 设置订单号  -->
+	<update id="setOrderCode" parameterType="pd">
+		update lxy_order_form set order_code = #{orderCode} where id = #{orderId}
+	</update>
+	
+	
+	<!--获得订单总数  -->
+	<select id="getUserOrderListCount" resultType="java.lang.Integer">
+		SELECT  count(id) from lxy_order_form where is_valid = 1 and user_id = #{userId}
+		<if test="orderState != null and orderState != '' ">
+			and current_state = #{orderState} 
+		</if>
+		
+	</select>
+	
+	<!--获得某个用户的订单列表  -->
+	<select id="getUserOrderList" resultType="pd">
+		SELECT  lof.id,lof.order_code as orderCode,lof.create_time as createTime,lof.start_time as startTime,lof.km,ldr.day_num,lof.price,lof.current_state as orderState,COUNT(DISTINCT lcs.id) as totalCar from lxy_order_form lof 
+			LEFT JOIN lxy_default_route ldr ON lof.default_route_id = ldr.id 
+			LEFT JOIN lxy_car_state lcs ON lof.id = lcs.form_id
+			where lof.is_valid = 1 and lof.user_id = #{userId}
+			<if test="orderState != null and orderState != '' ">
+				and current_state = #{orderState} 
+			</if>
+			group by lof.id
+			order by createTime desc
+			limit #{startLine},#{showLine}
+	</select>
+	
+	<!--根据订单id获得订单信息  -->
+	<select id="getOrderFormById" resultType="pd" parameterType="java.lang.Long">
+		select lof.id,
+			lof.create_time as createTime,
+			lof.order_code as orderCode,
+			IFNULL(ldr.content,lof.user_defined_route) as route,
+			ldr.km as routeKm,
+			lof.start_time as startTime,
+			lof.end_time as endTime,
+			IFNULL(ljs.`name`,lof.jt_site) as jtSite,
+			IFNULL(lss.`name`,lof.st_site) as stSite,
+			ljs.km as jtSiteKm,
+			lss.km as stSiteKm,
+			lof.headcount,
+			lof.remark,
+			lof.km,
+			lof.price,
+			lof.contact_person as contactPerson,
+			lof.contact_number as contactNumber,
+			sau.name as userName,
+			sau.EMAIL as userEmail,
+			lof.guide,
+			lof.guide_contact_number as guideContactNumber,
+			lof.group_no as groupNo,
+			lof.current_state  as orderState,
+			loe.reason,
+			lof.pay_method as payMethod,
+			lof.pay_time as payTime,
+			lof.fail_reason as failReason,
+			count(lcs.id) as totalCar,
+			sr.ROLE_NAME as roleName
+		from lxy_order_form lof
+		
+		LEFT JOIN lxy_default_route ldr     ON lof.default_route_id = ldr.id
+		LEFT JOIN lxy_jst_site 		ljs		ON lof.jt_site_id = ljs.id
+		LEFT JOIN lxy_jst_site  	lss		ON lof.st_site_id = lss.id
+		LEFT JOIN lxy_car_state  	lcs		ON lof.id = lcs.form_id 
+		LEFT JOIN sys_app_user      sau     ON lof.user_id = sau.USER_ID
+		LEFT JOIN sys_role 			sr      ON sau.ROLE_ID = sr.ROLE_ID
+		LEFT JOIN lxy_order_examine loe     ON loe.form_id = lof.id
+		where lof.id = #{orderId}
+	</select>
+	
+	<!--获得某个订单所订的车  -->	
+	<select id="getCarsByOrderId" parameterType="java.lang.Long" resultType="pd">
+		select lcs.id,lct.`name` as typeName,lct.seat_num as seatNum,lct.price,lci.id as carId, lci.plate_number as plateNum,ld.name as driverName,ld.tel as driverTel from lxy_car_state lcs
+
+			LEFT JOIN lxy_car_info lci ON lcs.car_id = lci.id
+			LEFT JOIN lxy_car_type lct ON lct.id = lci.car_type_id
+			LEFT JOIN lxy_driver    ld ON ld.id = lcs.driver_id
+
+		WHERE lcs.form_id = #{orderId}
+	</select>
+	
+	<!--修改订单  -->
+	<update id="updateOrderFormById" parameterType="pd">
+		update lxy_order_form  set 
+			default_route_id = #{defaultRouteId}, user_defined_route=#{route},
+			start_time = #{startTime}, end_time = #{endTime},
+			jt_site = #{jtSite}, jt_site_id = #{jtSiteId},
+			st_site = #{stSite}, st_site_id = #{stSiteId},
+			headcount = #{headcount},group_no = #{groupNo},
+			km = #{km}, price = #{price},
+			contact_person = #{contactPerson}, contact_number = #{contactNumber},
+			guide = #{guide}, guide_contact_number = #{guideContactNumber},
+			remark = #{remark},current_state = #{currentState},last_state=null
+			
+		where id = #{orderId}
+	</update>
+	
+	<!--支付成功、更新订单状态  -->
+	<update id="orderPayOk" parameterType="pd">
+		update lxy_order_form  set 
+			last_state=current_state, 
+			current_state='PAY_OK', 
+			pay_order_id=#{payOrderId}, 
+			pay_time=NOW() 
+		wehre id=#{orderId}
+ 	</update>
+ 	
+ 	<!--支付成功（暂时）  -->
+ 	<update id="paySuccess" parameterType="java.lang.Long">
+ 		update lxy_order_form set
+ 		last_state = current_state,
+ 		current_state = 'PAY_OK',
+		pay_time = NOW()
+		where id = #{orderId} 		
+ 	</update>
+ 	
+ 	<!--取消订单：置订单状态，释放车辆  -->
+ 	<update id="cancelOrder" parameterType="java.lang.Long">
+ 		UPDATE lxy_order_form lof
+			LEFT JOIN  lxy_car_state lcs ON lof.id = lcs.form_id 
+			LEFT JOIN lxy_car_info lci ON lcs.car_id = lci.id
+			set
+			lci.trip_times=lci.trip_times -1,
+			lof.last_state = lof.current_state ,lof.current_state = 'CANCELED',lcs.use_state = 'UNLOCKED'
+		where lof.id = #{orderId}  
+ 	</update>
+ 	<!--用户删除订单  -->
+ 	<update id="lgcDelById" parameterType="java.lang.Long">
+ 		update lxy_order_form set is_valid = 0 where id =#{orderId} 
+ 	</update>
+	
+	<!-- 获取拒绝退款原因 -->
+	<select id="getRefuseReason" resultType="pd" parameterType="java.lang.Long">
+		SELECT reason
+		FROM lxy_order_examine
+		WHERE form_id=#{orderId}
+	</select>
+	
+	<select id="getDriNamsAndTelByCarStaIds" parameterType="pd" resultType="pd">
+		select  ld.name,ld.tel,lcs.start_time as startTime from lxy_driver ld 
+		
+		LEFT JOIN lxy_car_info lci ON ld.id = lci.driver_id
+		LEFT JOIN lxy_car_state lcs ON lci.id= lcs.car_id  where lcs.id in(${ids})
+	</select>
+	
+	<!--订单已通知司机-->
+	<update id="alrSmsDri" parameterType="java.lang.Long" >
+		update lxy_order_form set is_sms_dri = 1 where id = #{formId}
+	</update>
+	
+	<!--查某个用户是否拥有某条订单或者是某条订单是否属于某个用户，防止一个用户操作另一个用户的订单时要用到 -->
+	<select id="getOrderByUAndId" parameterType="pd" resultType="pd">
+		select * FROM  lxy_order_form lof 
+
+			LEFT JOIN sys_app_user sau ON lof.user_id = sau.USER_ID
+			
+		WHERE sau.USERNAME = #{userName} and lof.id=#{orderId}
+	</select>
+	
+	
+	<!--*******************退款start ***************** -->
+	<!-- 删除退款信息 -->
+	<delete id="deleteRefund">
+		update lxy_order_refund set state = 'DELETE' where form_id = #{formId}
+	</delete>
+	<!-- 新增一条退款信息 -->
+	<insert id="addRefund">
+		insert into lxy_order_refund
+		(create_time, person_name, person_phone, bank_name, bank_no, reason, form_id)
+		values
+		(NOW(), #{personName}, #{personPhone}, #{bankName}, #{bankNo}, #{reason}, #{formId})
+	</insert>
+	<update id="updateOrderState">
+		UPDATE lxy_order_form 
+		SET 
+		last_state = current_state,
+		current_state = #{newState}
+		<if test=" payOrderId != null and payOrderId != '' ">
+			,pay_type = #{payType}
+			,pay_order_id =#{payOrderId} 
+			,pay_time = NOW()
+		</if>
+		WHERE id = #{orderId} AND current_state = #{oldState};	
+	</update>
+	
+	<!--退款成功释放车辆  -->
+	<update id="refundfreeCars" parameterType="pd">
+ 		UPDATE lxy_order_form lof
+			LEFT JOIN  lxy_car_state lcs ON lof.id = lcs.form_id 
+			LEFT JOIN  lxy_car_info lci ON lcs.car_id = lci.id
+			set
+			lci.trip_times = lci.trip_times-1,
+			lcs.use_state = 'UNLOCKED'
+			
+		where lof.id = #{orderId}
+		  
+ 	</update>
+	<!--*******************退款end ******************* -->
+	
+</mapper>

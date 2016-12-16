@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CarStateMapper">
+	
+	<!--标识一条car_state记录已通知司机(NoticeDriver)  -->
+	<update id="notDri" parameterType="java.lang.Long">
+		update lxy_car_state set is_sms_dri = 1 where id = #{carStaId}
+	</update>
+	
+	<select id="getCarStateCount" resultType="java.lang.Integer">
+		select count(*) from (SELECT lcs.start_time ,lcs.end_time ,lct.`name`,lci.plate_number,sau.`NAME` AS userName FROM `lxy_car_state` lcs 
+		LEFT JOIN lxy_car_info lci ON  lcs.car_id = lci.id 
+		LEFT JOIN lxy_car_type lct ON lci.car_type_id = lct.id
+		LEFT JOIN sys_app_user sau ON lcs.user_id = sau.USER_ID
+		where lcs.is_valid = 1
+		<if test=" startTime != null and startTime != '' ">
+			AND DATE_FORMAT(lcs.`start_time`, '%Y-%m-%d')  = str_to_date(#{startTime} , '%Y-%m-%d') 
+		</if>
+		<if test=" endTime != null and endTime != '' ">
+			AND DATE_FORMAT(lcs.`end_time`, '%Y-%m-%d')  = str_to_date(#{endTime} , '%Y-%m-%d') 
+		</if>
+		<if test=" plateNum != null and plateNum != '' ">
+			AND lci.plate_number like CONCAT('%', #{plateNum},'%')
+		</if>
+		<if test=" carName != null and carName != '' ">
+			AND lct.name like CONCAT('%', #{carName},'%')
+		</if>
+		<if test=" userName != null and userName != '' ">
+			AND sau.NAME like CONCAT('%', #{userName},'%')
+		</if>
+		) t
+	</select>
+	
+	<select id="getCarStateList" resultType="pd">
+		SELECT lcs.start_time ,lcs.end_time ,lct.`name`,lci.plate_number,sau.`NAME` AS userName FROM `lxy_car_state` lcs 
+		LEFT JOIN lxy_car_info lci ON  lcs.car_id = lci.id 
+		LEFT JOIN lxy_car_type lct ON lci.car_type_id = lct.id
+		LEFT JOIN sys_app_user sau ON lcs.user_id = sau.USER_ID
+		where lcs.is_valid = 1
+		<if test=" startTime != null and startTime != '' ">
+			AND DATE_FORMAT(lcs.`start_time`, '%Y-%m-%d')  = str_to_date(#{startTime} , '%Y-%m-%d') 
+		</if>
+		<if test=" endTime != null and endTime != '' ">
+			AND DATE_FORMAT(lcs.`end_time`, '%Y-%m-%d')  = str_to_date(#{endTime} , '%Y-%m-%d') 
+		</if>
+		<if test=" plateNum != null and plateNum != '' ">
+			AND lci.plate_number like CONCAT('%', #{plateNum},'%')
+		</if>
+		<if test=" carName != null and carName != '' ">
+			AND lct.name like CONCAT('%', #{carName},'%')
+		</if>
+		<if test=" userName != null and userName != '' ">
+			AND sau.NAME like CONCAT('%', #{userName},'%')
+		</if>
+		ORDER BY lcs.`create_time` DESC
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select>
+	
+	<select id="getUseCarList" resultType="pd">
+		SELECT lcs.start_time AS startTime, lcs.end_time AS endTime,
+		loi.id AS carId,
+		loi.plate_number AS plateNum,
+		lot.name,
+		lot.seat_num AS seatNum,
+		lot.price,
+		su.`USER_ID` AS userId,
+		su.`USERNAME` AS username,
+		su.`NAME` AS realname
+		FROM lxy_car_state AS lcs
+		LEFT JOIN lxy_car_info AS loi ON loi.id = lcs.car_id 
+		LEFT JOIN lxy_car_type AS lot ON lot.id = loi.car_type_id
+		LEFT JOIN sys_app_user AS su ON su.USER_ID = lcs.user_id
+		
+		WHERE lcs.use_state IN('WAITLOCK','BINDROUTE','LOCKED')
+		<if test=" startTime != null and startTime != '' ">
+			AND DATE_FORMAT(lcs.`start_time`, '%Y-%m-%d')  = str_to_date(#{startTime} , '%Y-%m-%d') 
+		</if>
+		<if test=" endTime != null and endTime != '' ">
+			AND DATE_FORMAT(lcs.`end_time`, '%Y-%m-%d')  = str_to_date(#{endTime} , '%Y-%m-%d') 
+		</if>
+		<if test=" plateNum != null and plateNum != '' ">
+			AND loi.plate_number like CONCAT('%', #{plateNum},'%')
+		</if>
+		<if test=" carName != null and carName != '' ">
+			AND lot.name like CONCAT('%', #{carName},'%')
+		</if>
+		<if test=" userName != null and userName != '' ">
+			AND su.NAME like CONCAT('%', #{userName},'%')
+		</if>
+		ORDER BY lcs.`create_time` DESC
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select>
+	
+	
+	<select id="getUseCarCount" resultType="Integer">
+		SELECT count(1) FROM lxy_car_state AS lcs
+		LEFT JOIN lxy_car_info AS loi ON loi.id = lcs.car_id
+		LEFT JOIN lxy_car_type AS lot ON lot.id = loi.car_type_id
+		LEFT JOIN sys_user AS su ON su.USER_ID = lcs.user_id
+		WHERE lcs.use_state IN('WAITLOCK','BINDROUTE','LOCKED')
+		<if test=" startTime != null and startTime != '' ">
+			AND DATE_FORMAT(lcs.`start_time`, '%Y-%m-%d')  = str_to_date(#{startTime} , '%Y-%m-%d') 
+		</if>
+		<if test=" endTime != null and endTime != '' ">
+			AND DATE_FORMAT(lcs.`end_time`, '%Y-%m-%d')  = str_to_date(#{endTime} , '%Y-%m-%d') 
+		</if>
+		<if test=" plateNum != null and plateNum != '' ">
+			AND loi.plate_number like CONCAT('%', #{plateNum},'%')
+		</if>
+		<if test=" carName != null and carName != '' ">
+			AND lot.name like CONCAT('%', #{carName},'%')
+		</if>
+		<if test=" userName != null and userName != '' ">
+			AND su.NAME like CONCAT('%', #{userName},'%')
+		</if>
+	</select>
+</mapper>
+

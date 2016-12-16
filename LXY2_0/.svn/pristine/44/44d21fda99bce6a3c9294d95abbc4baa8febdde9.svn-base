@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="RouteDistanceMapper">
+	
+
+	<resultMap type="com.lx.entity.home.Distance" id="distanceMap">
+		<id column="id" property="id"/>
+		<result column="start_address" property="startAddress"/>
+		<result column="end_address" property="endAddress"/>
+		<result column="distance" property="distance"/>
+		<result column="add_much" property="addMuch"/>
+		<result column="add_km" property="addKm"/>
+		
+	</resultMap>
+	<resultMap type="com.lx.entity.home.City" id="cityMap">
+		<id column="id" property="id"/>
+		<result column="cityId" property="cityId"/>
+		<result column="cityName" property="cityName"/>
+		<result column="provinceId" property="provinceId"/>
+		
+	</resultMap>
+	
+	
+	
+	<!-- 根据countryId查询里程数 -->
+	<select id="getDistance"  parameterType="pd" resultType="pd">
+		select distance, add_much AS addMuch, add_km AS addKm from lxy_distance where  end_address=#{endAddId} and start_address=#{startAddId}
+	</select>
+	
+	
+	<select id="findDistanceById" parameterType="pd" resultType="pd">
+		select * from lxy_distance where  end_address=#{endAddId} and start_address=#{startAddId}
+	</select>
+	
+	<update id="updateDistanceById" >
+		UPDATE `lxy_distance` SET `distance`=#{distance}, `add_km`=#{addKm}, `add_much`=#{addMuch} 
+		WHERE `id`=#{id}  ;
+	</update> 
+	
+	<!-- 查询distance所有数据 -->
+	<select id="findDistance"  resultType="pd">
+	<!-- 	select 
+			id,start_address,end_address,distance,add_km,add_much
+		from lxy_distance  
+		where state ='ADD'
+		<if test=" startAddress != null and startAddress !='' ">		
+			 AND start_address like CONCAT('%', #{start_address},'%')
+			AND start_address=#{startAddress}
+		</if>
+		
+		<if test=" endAddress != null and endAddress !='' ">
+			AND end_address like CONCAT('%', #{end_address},'%') 
+			AND end_address=#{endAddress}
+		</if>
+		
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if> -->
+		select DISTINCT ld.id,addr.addr_name as start_addr,addr1.addr_name as end_addr,ld.distance,ld.add_much,ld.add_km 
+		
+		from lxy_distance ld 
+
+		LEFT JOIN 
+		(select CONCAT(lcity.cityName,larea.areaName,lctry.countryName) as  addr_name, lctry.countryId from lxy_city lcity 
+			RIGHT OUTER  JOIN lxy_area  larea ON lcity.cityId =larea.cityId
+			RIGHT OUTER JOIN lxy_country lctry ON lctry.areaId = larea.areaId ) addr  ON ld.start_address = addr.countryId
+		
+		LEFT JOIN 
+		(select CONCAT(lcity.cityName,larea.areaName,lctry.countryName) as  addr_name, lctry.countryId from lxy_city lcity 
+			RIGHT OUTER  JOIN lxy_area  larea ON lcity.cityId =larea.cityId
+			RIGHT OUTER JOIN lxy_country lctry ON lctry.areaId = larea.areaId ) addr1 ON ld.end_address = addr1.countryId
+		
+		where state='ADD'
+		<if test=" startAddress != null and startAddress !='' ">		
+			
+			AND start_addr=#{startAddress}
+		</if>
+		
+		<if test=" endAddress != null and endAddress !='' ">
+			
+			AND end_addr=#{endAddress}
+		</if>
+		
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select> 
+	
+	<select id="findDistanceCount" resultType="Integer">
+		select 
+			count(1)
+		from lxy_distance
+		where state ='ADD'
+		<if test=" startAddress != null and startAddress !='' ">		
+			AND start_address=#{startAddress}
+		</if>
+		<if test=" endAddress != null and endAddress !='' ">
+			 AND end_address=#{endAddress} 
+		</if>
+		
+	</select>
+	
+	
+		<!-- 查询cityName、areaName、countryName -->
+	<select id="findDistanceManage" resultType="pd">
+		SELECT  a.cityName,
+				a.cityId,
+				a.provinceId,
+				b.areaName,
+				b.areaId,
+				b.cityId,
+				c.countryName,
+				c.areaId,
+				c.countryId
+		from lxy_city AS a
+		LEFT JOIN lxy_area  AS b ON b.cityId = a.cityId
+		LEFT JOIN lxy_country AS c ON c.areaId = b.areaId
+		where
+			a.state='ADD' and b.state='ADD' and c.state='ADD'
+		  <if test=" cityName != null and cityName !='' ">
+			AND a.cityName like CONCAT('%', #{cityName},'%')
+		</if>
+		<if test=" areaName != null and areaName !='' ">
+			AND b.areaName like CONCAT('%', #{areaName},'%')
+		</if>
+		<if test=" countryName != null and countryName !='' ">
+			AND c.countryName like CONCAT('%', #{countryName},'%')
+		</if>  
+		
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if> 
+	</select>
+	
+	<select id="findDistanceManageCount" resultType="Integer">
+		SELECT 
+				COUNT(1)
+		from lxy_city AS a
+		LEFT JOIN lxy_area  AS b ON b.cityId = a.cityId
+		LEFT JOIN lxy_country AS c ON c.areaId = b.areaId
+		where
+			a.state='ADD' and b.state='ADD' and c.state='ADD'
+			
+		  <if test=" cityName != null and cityName !='' ">
+			AND cityName=#{cityName}
+		</if>
+		<if test=" areaName != null and areaName !='' ">
+			AND areaName=#{areaName}
+		</if>
+		<if test=" countryName != null and countryName !='' ">
+			AND countryName=#{countryName}
+		</if>  
+	</select>
+	
+	
+	<!-- 修改city -->
+	<update id="updateCityById" >
+		UPDATE `lxy_city` SET `cityName`=#{cityName}
+		WHERE `cityId`=#{cityId}  ;
+	</update> 
+	
+	<!-- 添加市 -->
+	<insert id="addCity" >
+		INSERT INTO `lxy_city` (`cityId`, `cityName`,`provinceId`) 
+		VALUES (#{cityId}, #{cityName}, #{provinceId});
+		
+	</insert>
+	<!-- 查询市总数 -->
+	<select id="findCityCount" resultType="Integer">
+		select 
+			count(1)
+		from lxy_city	
+	</select>
+	
+	 <!-- 查询City所有数据 -->
+	<!--<select id="findCityList"  resultType="pd">
+		select 
+			id,cityId,cityName,provinceId
+		from lxy_city  
+		where state ='ADD'
+		<if test=" cityName != null and cityName !='' ">
+			AND cityName=#{cityName}
+		</if>
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select> 
+	<select id="findCityCounts" resultType="Integer">
+		select 
+			count(1)
+		from lxy_city
+		where state ='ADD'
+		<if test=" cityName != null and cityName !='' ">
+			AND cityName=#{cityName}
+		</if>
+	</select> -->
+	
+	
+	
+	<!-- 添加县-->
+	<insert id="addArea" >
+		INSERT INTO `lxy_area` (`areaId`, `areaName`,`cityId`) 
+		VALUES (#{areaId}, #{areaName}, #{cityId});
+		
+	</insert>
+	<!-- 查询县总数 -->
+	<select id="findAreaCounts" resultType="Integer">
+		select count(1) from lxy_area	where cityId=#{cityId}
+	</select>
+	
+	<!-- 修改area -->
+	<update id="updateAreaById" >
+		UPDATE `lxy_area` SET `areaName`=#{areaName}
+		WHERE `areaId`=#{areaId}  ;
+	</update> 
+	
+	<!-- 添加区域-->
+	<insert id="addCountry" >
+		INSERT INTO `lxy_country` (`countryId`, `countryName`,`areaId`) 
+		VALUES (#{countryId}, #{countryName}, #{areaId});
+		
+	</insert>
+	<!-- 查询县总数 -->
+	<select id="findCountryCounts" resultType="Integer">
+		select count(1) from lxy_country where areaId=#{areaId}
+	</select>
+	
+	<!-- 修改country -->
+	<update id="updateCountryById" >
+		UPDATE `lxy_country` SET `countryName`=#{countryName}
+		WHERE `countryId`=#{countryId};
+	</update>
+	
+	<update id="deleteCountry">
+		 Update  `lxy_country` SET state='DEL'
+		  where  `countryId` = #{countryId};
+	</update> 
+	
+	<!--************************************************************gcy *********************************** -->
+	<!-- 根据distanceIds查出总公里数 -->
+	<select id="getTotalKmByDistanceIds" parameterType="java.util.List" resultType="java.lang.Double">
+		select sum(distance) from lxy_distance where id in
+		
+		<foreach collection="list" item="dayIds" open="(" close=")" separator=",">
+		
+			<foreach collection="dayIds" item="id"  separator=",">
+			 #{id}
+			</foreach>
+			
+		</foreach>
+	</select>
+
+</mapper>

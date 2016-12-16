@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AdditionalChargesMapper">
+
+	<select id="getAdditionalChargesByIds" resultType="pd">
+		select * from lxy_additional_charges where state='ADD' AND id IN(${addChargesIds})
+	</select>
+	
+	<select id="getAdditionalCharges" resultType="pd">
+		select * from lxy_additional_charges where state='ADD' AND online=0;
+	</select>
+	
+	<insert id="saveAdditionalCharges" parameterType="pd">
+		insert into lxy_additional_charges(name, price) values (#{name},#{price})
+	</insert>
+	
+	<!-- 删除-->
+	<delete id="deleteAdditionalCharges" parameterType="pd">
+		update lxy_additional_charges set state='DEL' where id = #{id}
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="updateAdditionalCharges" parameterType="pd">
+		update  lxy_additional_charges set name = #{name}, price = #{price}  where id = #{id}
+	</update>
+	
+	
+	<!-- 后台 -->
+	<!-- 显示已用车辆list -->
+	<select id="getAdditionalChargesList" resultType="pd">
+		SELECT id, name, price FROM lxy_additional_charges
+		WHERE state='ADD'
+		<if test=" name != null and name != '' ">
+			AND name  = #{name}
+		</if>
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select>
+	
+	
+	<select id="getAdditionalChargesCount" resultType="Integer">
+		SELECT count(1) FROM lxy_additional_charges
+		WHERE state='ADD'
+		<if test=" name != null and name != '' ">
+			AND name  = #{name}
+		</if>
+	</select>
+	
+	<select id="getAdditionalChargesById" resultType="pd">
+		select * from lxy_additional_charges where id=#{id}
+	</select>
+	
+</mapper>

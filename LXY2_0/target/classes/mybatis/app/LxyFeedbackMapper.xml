@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="LxyFeedbackMapper">
+	
+	<!-- 添加反馈信息 -->
+	<insert id="addFeedback" parameterType="pd">
+		INSERT lxy_feedback (create_time,type, email,phone,username,message
+		<if test="userId != null and userId != ''">
+			,user_id		
+		</if>
+		)
+		VALUES (NOW(),#{type},#{email},#{phone},#{username},#{message}
+		<if test="userId != null and userId != ''">
+			,#{userId}
+		</if>
+		);
+	</insert>
+	
+	<select id="findFeedbackList" resultType="pd" parameterType="pd">
+		SELECT  wf.id, DATE_FORMAT(wf.create_time,'%Y-%m-%d %H:%i:%s') createTime, wf.type, wf.email, wf.phone, wf.username, wf.message 
+		FROM lxy_feedback wf
+		WHERE 1=1 
+		
+		<if test=" startTime != null and startTime != '' ">
+			AND wf.create_time &gt; DATE('${startTime}')
+		</if>
+		<if test=" endTime != null and endTime != '' ">
+			AND wf.create_time &lt; DATE('${endTime}')
+		</if>
+		 
+		<if test="showLine != null and showLine !='' ">
+			LIMIT ${startLine} , ${showLine}
+		</if>
+	</select>
+	
+	
+	<select id="findFeedbackListCount" resultType="Integer" parameterType="pd">
+		SELECT COUNT(*)
+		FROM lxy_feedback wf
+		WHERE 
+		1=1
+		<if test=" startTime != null and startTime != '' ">
+			AND wf.create_time &gt; DATE('${startTime}')
+		</if>
+		<if test=" endTime != null and endTime != '' ">
+			AND wf.create_time &lt; DATE('${endTime}')
+		</if>
+	</select>
+	
+	<select id="feedbackDetail" resultType="pd" parameterType="pd">
+		SELECT  wf.id, DATE_FORMAT(wf.create_time,'%Y-%m-%d %H:%i:%s') createTime, wf.type, wf.email, wf.phone, wf.username, wf.message 
+		,IFNULL(wu.email,wu.phone) account
+		FROM lxy_feedback wf
+		LEFT JOIN web_user wu ON wu.id = wf.user_id
+		WHERE 1=1 AND wf.id = #{id}
+	</select>
+	
+	<delete id="dels" parameterType="pd">
+		DELETE FROM lxy_feedback where id = #{id};
+	</delete>
+	
+	
+	
+</mapper>

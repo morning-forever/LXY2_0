@@ -1,0 +1,103 @@
+package com.lx.controller.app.mobile;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.lx.controller.base.BaseController;
+import com.lx.service.app.DistanceService;
+import com.lx.util.PageData;
+import com.lx.util.XConst;
+
+@Controller("mobileRouteController")
+@RequestMapping("mobile/route")
+public class RouteController extends BaseController{
+	
+	@Resource
+	private DistanceService dstService;
+	
+	/**
+	 * 根据天数（传进来的是开始日期和结束日期，要根据这两个日期算出天数）取得符合这个”天数“的常规路线
+	 * @return
+	 */
+	@RequestMapping("defaults")
+	public PageData getDefaultRoutes(){
+		PageData res = new PageData();
+		
+		try {
+			
+		} catch (Exception e) {
+		
+		}
+		return res;
+		
+	}
+	
+	/**
+	 * 获得细节公里数（detailDistance）
+	 * @param param  传过来地址列表
+	 * (如param = [["0100010001","0200060014","0200120024"],
+	 * ["0200120024","0300070012","0400010001"],
+	 * ["0400010001","0300040008","0300030005","0100010001"]]
+	 * param[i] 表示第i天的地址列表，param[i][j]表示第i天的第j个地址)
+	 * 
+	 * @return 返回示例
+	 *[{"id":***,"addMuch":0,"distance":470,"addKm":0,"startAddr":"0100010001","day":1,"endAddr":"0200060014"},
+	 *{"id":***,"addMuch":0,"distance":169,"addKm":0,"startAddr":"0200060014","day":1,"endAddr":"0200120024"},
+	 *{"id":***,"addMuch":0,"distance":337,"addKm":0,"startAddr":"0200120024","day":2,"endAddr":"0300070012"},
+	 *{"id":***,"addMuch":0,"distance":473,"addKm":0,"startAddr":"0300070012","day":2,"endAddr":"0400010001"},
+	 *{"id":***,"addMuch":0,"distance":374,"addKm":0,"startAddr":"0400010001","day":3,"endAddr":"0300040008"},
+	 *{"id":***,"addMuch":0,"distance":106,"addKm":0,"startAddr":"0300040008","day":3,"endAddr":"0300030005"},
+	 *{"id":***,"addMuch":0,"distance":100,"addKm":0,"startAddr":"0300030005","day":3,"endAddr":"0100010001"}]
+	 */
+	@RequestMapping("dtlDstList")
+	@ResponseBody
+	public PageData getDtlDstList(@RequestBody String[][] param){
+		
+		PageData res = new PageData();
+		try {
+			
+			//1.将传过来的地址列表做一个转化（因为mybatis的foreach不能控制循环的次数（会导致出错））
+			List<List<PageData>> countryList = new ArrayList<List<PageData>>();
+			for(String[] day : param){
+				
+				List<PageData> dayItem = new ArrayList<PageData>();
+				
+				for(int i=0;i<day.length-1;i++){
+					
+					PageData pd = new PageData();
+					pd.put("startAddr", day[i]);
+					pd.put("endAddr", day[i+1]);
+					dayItem.add(pd);
+	 			}
+				
+				countryList.add(dayItem);
+				
+			}
+			
+			//2.查询数据库获得公里数list
+			List<PageData> dtlDsts = dstService.getDtlDstList(countryList);
+			
+			res.putMessage(XConst.SUCCESS);
+			
+			res.put("dtlDsts", dtlDsts);
+			
+		} catch (Exception e) {
+
+			res.clear();
+			res.putMessage(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		
+		return res;
+	}
+	
+	
+	
+}

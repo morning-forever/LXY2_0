@@ -1,0 +1,398 @@
+package com.lx.controller.app.pc.order;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.session.Session;
+import org.apache.shiro.subject.Subject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.propertyeditors.CustomDateEditor;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.alibaba.fastjson.JSONArray;
+import com.lx.controller.base.BaseController;
+import com.lx.entity.system.User;
+import com.lx.service.app.CarManagerService;
+import com.lx.service.app.DefaultRouteManagerService;
+import com.lx.service.app.OrderFormService;
+import com.lx.util.Const;
+import com.lx.util.PageData;
+import com.lx.util.XConst;
+
+
+/**
+ * 
+ * 用户订单Controller
+ * 
+ * @author Hham
+ *
+ */
+@Controller
+@RequestMapping("lxy/pc/user/order")
+public class UserOrderController extends BaseController {
+	
+	@Autowired
+	private OrderFormService orderFormService;
+	
+	@Autowired
+	private CarManagerService carManagerService;
+	
+	@Autowired
+	private DefaultRouteManagerService defaultRouteManagerService;
+	
+	//可删除订单类型
+	private final static String[] ALLOWED_ORDER_TYPE_ARR=new String[]{"REFUNDED","PAY_OK","CLOSED","REFUNDING_FAIL"};
+	//可退款订单类型
+	private final static String[] REFUND_ORDER_TYPE_ARR=new String[]{"PAY_OK","REFUNDING_FAIL"};
+
+	/**
+	 * 
+	 * 跳转到订单列表
+	 * 
+	 * @return
+	 */
+	
+	@RequestMapping("/list")
+	public ModelAndView orderList() {
+		ModelAndView mav = new ModelAndView();
+		mav.setViewName("app/pc/order/list");
+		try {
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return mav;
+	}
+	
+	
+	@RequestMapping("/detailcheck")
+	public ModelAndView check() {
+		ModelAndView mav = new ModelAndView();
+		mav.setViewName("app/pc/order/detail_check");
+		try {
+			PageData pd = getPageData();
+			
+			mav.addObject("startTime", pd.getString("startTime"));
+			mav.addObject("endTime", pd.getString("endTime"));
+			mav.addObject("carStateIds", pd.getString("carStateIds"));
+			mav.addObject(XConst.RT,pd.getString(XConst.RT));
+			
+			List<PageData> carList = carManagerService.getCarByIds(pd);
+			mav.addObject("carList", carList);
+			
+			mav.addObject("distanceIds", pd.getString("distanceIds"));
+			
+			
+			String distancesJsonStr=pd.getString("distances");
+			JSONArray distances =  JSONArray.parseArray(distancesJsonStr);
+			mav.addObject("distances", distances);//这里顺带着把解析出来的distances JSON（里面放得有每一天的细节公里数）数组放入mav;
+			
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return mav;
+	}
+	
+	@RequestMapping(value = "listdata")
+	@ResponseBody
+	public PageData listData() {
+		PageData res = new PageData();
+		try {
+			System.out.println("----------listdata----------");
+			PageData param = getSysPageData();
+			//shiro管理的session
+			Subject currentUser = SecurityUtils.getSubject();  
+			Session session = currentUser.getSession();
+			User user = (User)session.getAttribute(Const.APP_USER);
+			if (user != null) {
+				String userId = user.getUSER_ID();
+				param.put("userId", userId);
+				res = orderFormService.getOrderList(param);
+			}
+			
+		} catch (Exception e) {
+			res.putStatus(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		return res;
+	}
+	
+	
+	@RequestMapping(value = "submit")
+	@ResponseBody
+	public PageData submitOrder(){
+		PageData res = new PageData();
+		try{
+			logBefore(logger,"--------lgq----------submitOrder");
+			//shiro管理的session
+			PageData pd = super.getPageData();
+			Subject currentUser = SecurityUtils.getSubject();  
+			Session session = currentUser.getSession();
+			User user = (User)session.getAttribute(Const.APP_USER);
+			if (user != null) {
+				pd.put("userId", user.getUSER_ID());
+				res = orderFormService.saveOrder(pd);
+			}
+	        
+		}catch (Exception e) {
+			res.put("status", XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		
+		return res;
+	}
+	
+	/**
+	 * 
+	 * 查询车订单列表
+	 * 
+	 * @return
+	 */
+	/*@RequestMapping(value = "/data", produces = XConst.JSON_PRODUCES)
+	@ResponseBody
+	public PageData rentDate(String type, Integer pageNo, String evaluate, String payType) {
+		PageData map = new PageData();
+		try {
+			//shiro管理的session
+			Subject currentUser = SecurityUtils.getSubject();  
+			Session session = currentUser.getSession();
+			User user = (User)session.getAttribute(Const.SESSION_USER);
+			String userId = user.getUSER_ID();
+			List<PageData> list = null;
+			if ("rent".equals(type)) {
+				list = webOrderService.findCarRentOrderList((pageNo - 1) * PAGE_SIZE, PAGE_SIZE, map, evaluate, payType, userId);
+			} else if ("wrap".equals(type)) {
+				list = webOrderService.findCarWrapOrderList((pageNo - 1) * PAGE_SIZE, PAGE_SIZE, map, evaluate, payType, userId);
+			} else if ("bus".equals(type)) {
+				list = webOrderService.findCarBusOrderList((pageNo - 1) * PAGE_SIZE, PAGE_SIZE, map, evaluate, payType, userId);
+			} else if ("carpool".equals(type)) {
+				list = webOrderService.findCarPoolOrderList((pageNo - 1) * PAGE_SIZE, PAGE_SIZE, map, evaluate, payType, userId);
+			}
+			map.put("list", list);
+			map.putStatus(XConst.SUCCESS);
+		} catch (Exception e) {
+			map.putStatus(XConst.ERROR);
+			e.printStackTrace();
+		}
+		return map;
+	}*/
+	
+	/**
+	 * 查看订单详情
+	 * @return
+	 */
+	@RequestMapping(value="orderDetial/{id}",produces=XConst.JSON_PRODUCES)
+	@ResponseBody
+	public ModelAndView orderDetial(@PathVariable(value="id") Long id){
+		ModelAndView mav=new ModelAndView();
+		PageData param=new PageData();
+		Map<String, Object> map = new HashMap<String, Object>();
+		param.put("id", id);
+		try {
+			System.out.println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+			/*String cartType = webOrderService.findOrderTypeById(param);
+			if ("carRent".equals(cartType)) {// 租车
+				map = webOrderService.findCarRentOrderDetial(param);
+				if(map!=null){
+					mav.setViewName("web/home/user_cart_rent_order_detial");
+				}else{
+					mav.setViewName("web/home/user_rent_car_order");
+				}
+			} else if ("carWrap".equals(cartType)) {// 包车
+				Map<String, Object> carWrapMap = webOrderService.findCarWrapOrderDetial(param);
+				List<Map<String, Object>> list = webOrderService.findCarWrapAddrList(param);
+				map.put("carWrapMap", carWrapMap);
+				map.put("list", list);
+				if(carWrapMap!=null){
+					mav.setViewName("web/home/user_cart_wrap_order_detial");
+				}else{
+					mav.setViewName("web/home/user_rent_car_order");
+				}
+			} else if ("bus".equals(cartType)) {// 班车
+				Map<String, Object> busMap = webOrderService.findCarBusOrderDetial(param);
+				List<Map<String, Object>> personList=webOrderService.findCarBusOrderPersonList(param);
+				map.put("busMap", busMap);
+				map.put("personList", personList);
+				if(busMap!=null){
+					mav.setViewName("web/home/user_cart_bus_order_detial");
+				}else{
+					mav.setViewName("web/home/user_rent_car_order");
+				}
+			} else if ("carpool".equals(cartType)) {// 拼车
+				Map<String, Object> carpool = webOrderService.findCarPoolOrderDetial(param);
+				List<Map<String, Object>> personList=webOrderService.findCarPoolOrderPersonList(param);
+				map.put("carpool", carpool);
+				map.put("personList", personList);
+				if(carpool!=null){
+					mav.setViewName("web/home/user_cart_pool_order_detial");
+				}else{
+					mav.setViewName("web/home/user_rent_car_order");
+				}
+			}*/
+
+			mav.addObject("map", map);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} 
+		return mav;
+	}
+	
+	
+	
+	/**
+	 * 申请退款
+	 * @param id
+	 * @return
+	 */
+	@RequestMapping(value="refund",produces=XConst.JSON_PRODUCES)
+	@ResponseBody
+	public PageData refund(Long id){
+		PageData pd=getApiPageData();
+		try {
+			pd.put("id", id);
+			
+			String orderType = getOrderTypes(REFUND_ORDER_TYPE_ARR);
+			
+			pd.put("orderTypes", orderType);
+			Long checkId=orderFormService.checkRefund(pd);
+			if(checkId!=null){
+				orderFormService.refund(pd);
+				pd.putStatus(XConst.SUCCESS);
+			}else{
+				pd.putStatus(XConst.ERROR);
+			}
+		} catch (Exception e) {
+			pd.putStatus(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		return pd;
+	}
+
+
+	
+	/**
+	 * 取消订单
+	 * @param id
+	 * @return
+	 */
+	@RequestMapping(value="canelOrder",produces=XConst.JSON_PRODUCES)
+	@ResponseBody
+	public PageData canelOrder(Long id){
+		PageData pd=getApiPageData();
+		try {
+			pd.put("id", id);
+			Long checkId = orderFormService.checkCannel(pd);
+			if(checkId != null){
+				orderFormService.cannelOrder(pd);
+				pd.putStatus(XConst.SUCCESS);
+			}else{
+				pd.putStatus(XConst.ERROR);
+			}
+		} catch (Exception e) {
+			pd.putStatus(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		return pd;
+	}
+	
+	/**
+	 * 删除订单
+	 * @param id
+	 * @return
+	 */
+	@RequestMapping(value="deleteOrder",produces=XConst.JSON_PRODUCES)
+	@ResponseBody
+	public PageData deleteOrder(Long id){
+		PageData pd=getApiPageData();
+		try {
+			pd.put("id", id);
+			pd.put("allowedOrderType", getOrderTypes(ALLOWED_ORDER_TYPE_ARR));
+			Long checkId=orderFormService.checkDelete(pd);
+			if(checkId!=null){
+				orderFormService.deleteOrder(pd);
+				pd.putStatus(XConst.SUCCESS);
+			}else{
+				pd.putStatus(XConst.ERROR);
+			}
+		} catch (Exception e) {
+			pd.putStatus(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		return pd;
+	}
+
+	/**
+	 * 跳转至退款页面
+	 * 
+	 * @return
+	 */
+	@RequestMapping("/refund/{orderId}")
+	public ModelAndView toRefund(@PathVariable Long orderId) {
+		ModelAndView mav = new ModelAndView();
+		try {
+			mav.addObject("orderId", orderId);
+			mav.setViewName("lxy/order/user_refund");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return mav;
+	}
+
+	/**
+	 * 保存申请退款信息
+	 * 
+	 * @return
+	 */
+	@RequestMapping(value = "/saveRefund")
+	@ResponseBody
+	public PageData saveRefund() {
+		PageData res = new PageData();
+		try {
+			PageData param = getPageData();
+			orderFormService.saveRefund(param);
+			res.putStatus(XConst.SUCCESS);
+		} catch (Exception e) {
+			res.putStatus(XConst.EXCEPTION);
+			e.printStackTrace();
+		}
+		return res;
+	}
+	
+	
+	//返回指定类型订单字符串拼接
+	private String getOrderTypes(String[] orderArr) {
+		StringBuffer OrderTypeBuffer=new StringBuffer();
+		for (int i = 0; i < orderArr.length; i++) {
+			OrderTypeBuffer.append("'");
+			OrderTypeBuffer.append(orderArr[i]);
+			OrderTypeBuffer.append("'");
+			OrderTypeBuffer.append(",");
+		}
+		
+		return OrderTypeBuffer.substring(0, OrderTypeBuffer.lastIndexOf(","));
+	}
+
+	
+	@InitBinder
+	public void initBinder(WebDataBinder binder){
+		DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+		binder.registerCustomEditor(Date.class, new CustomDateEditor(format,true));
+	}
+	
+
+	
+}

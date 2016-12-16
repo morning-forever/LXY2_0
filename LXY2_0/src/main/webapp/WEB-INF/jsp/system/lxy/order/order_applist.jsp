@@ -1,0 +1,403 @@
+﻿<%@ page language="java" contentType="text/html; charset=UTF-8" import="com.lx.util.XConst" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%
+	String path = request.getContextPath();
+	String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
+%>
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	<base href="<%=basePath%>">
+	<!-- jsp文件头和头部 -->
+	<%@ include file="../../admin/top.jsp"%>
+
+	<link rel="stylesheet" type="text/css" href="static/system/css/sys_style.css"/>
+	
+	<link id="skin" rel="stylesheet" href="static/jbox/Pink/jbox.css" />
+    <script type="text/javascript" src="static/jbox/js/jquery.jBox.src.js"></script>
+	</head>
+
+<body>
+<div class="container-fluid" id="main-container">
+	<div id="page-content" class="clearfix">
+		<div class="row-fluid">
+			<table style="margin-left: 5px;" id="btnmenu" class="select_table">
+				<tbody>
+					<tr>
+						<td>
+							昵称：
+						</td>
+						<td>
+							<input type="text" class="mysearch" id="nickName"> 
+						</td>
+						<td>
+							商品订单号：
+						</td>
+						<td>
+							<input type="text" class="mysearch" id="orderCode"> 
+						</td>
+						<td>
+							支付订单号：
+						</td>
+						<td >
+							<input type="text" class="mysearch" id="payOrderId"> 
+						</td>
+					</tr>
+					<tr>
+						<td>
+							联系电话：
+						</td>
+						<td>
+							
+							<input type="text" class="mysearch" id="personPhone"> 
+						</td>
+						<td>
+							订单时间：
+						</td>
+						<td>
+							<div class="input-prepend">
+								<span class="add-on"><i class="icon-calendar"></i></span>
+								<input class="span10 date-picker" type="text" id="orderTime" name="orderTime" readonly="readonly" class="span11 mydate-picker" data-date-format="yyyy-mm-dd" style="width: 193px;">
+							</div>
+						</td>
+						<td>
+							订单状态：
+						</td>
+						<td>
+							<select id="orderState">
+								<option value="">全部</option>
+								<option value="WAITPAY">待付款</option>
+								<option value="PAY_OK">交易成功</option>
+								<option value="CLOSED">交易关闭</option>
+								<option value="REFUNDING">退款中</option>
+								<option value="REFUND_FAIL">退款失败</option>
+								<option value="REFUNDED">退款完成</option>
+								<option value="DOWNPAYMENT">已支付定金</option>
+							</select>
+						</td>
+						<td>
+							<a title="查询" class="btn btn-mini btn-success" id="searchBtn"><i class="icon-search"></i>查询</a>
+							<a title="清空" class="btn btn-mini btn-success" id="clearBtn"><i class="icon-refresh"></i>清空</a>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			
+			
+			<table id="table_report" class="table table-striped table-bordered table-hover">
+				<thead>
+					<tr>
+						<th width="2%" class="sorting_disabled">序号</th>
+						<th width="10%" class="sorting_disabled">订单时间</th>
+						<th width="10%" class="sorting_disabled">商品订单号</th>
+						<th width="10%" class="sorting_disabled">团号</th>
+						<th width="8%" class="sorting_disabled">支付方式</th>
+						<th width="10%" class="sorting_disabled">支付单号</th>
+						<th width="8%" class="sorting_disabled">昵称</th>
+						<th width="8%" class="sorting_disabled">联系人姓名</th>
+						<th width="6%" class="sorting_disabled">联系人电话</th>
+						<th width="8%" class="sorting_disabled">总公里数</th>
+						<th width="5%" class="sorting_disabled">总金额</th>
+						
+						<th width="5%" class="sorting_disabled">审核人</th>
+						<th width="5%" class="sorting_disabled">订单状态</th>
+						<th width="10%" class="sorting_disabled">操作</th>
+					</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+ 		 </div>
+ 		 
+	</div><!--/#page-content-->
+	
+</div><!--/.fluid-container#main-container-->
+
+<%@ include file="../../admin/foot.jsp"%>
+		
+
+<!-- 引入 -->
+<script type="text/javascript">window.jQuery || document.write("<script src='static/js/jquery-1.9.1.min.js'>\x3C/script>");</script>
+<script src="static/js/bootstrap.min.js"></script>
+<script src="static/js/ace-elements.min.js"></script>
+<script src="static/js/ace.min.js"></script>
+
+<script type="text/javascript" src="static/js/chosen.jquery.min.js"></script><!-- 下拉框 -->
+<script type="text/javascript" src="static/js/bootstrap-datepicker.min.js"></script><!-- 日期框 -->
+<!-- 引入 -->
+<script id="tpl" type="text/x-handlebars-template">
+	{{#each func}}
+	<a class="btn btn-mini btn-{{this.type}}" href="javascript:;" title="{{this.name}}" target="mainFrame" onclick="{{this.fn}}"><i class="icon-{{this.icon}}"></i></a>
+	{{/each}}
+</script>
+
+<script type="text/javascript">
+$(top.hangge());
+
+var tpl = $("#tpl").html();
+//预编译模板
+var template = Handlebars.compile(tpl);
+
+$(document).ready(function(){
+	$('.date-picker').datepicker();
+	//初始化加载列表
+	initMainList();
+	
+	//查询
+	var table = $("#table_report").DataTable();
+	$("#searchBtn").click(function() {
+		var json = '{';
+		$("#btnmenu select,#btnmenu input").each(function() {
+			json += '"' + this.id + '":"' + $(this).val() + '",';
+		});
+		json = json.substr(0, json.length - 1);
+		json += '}';
+		table.search(json).draw();
+	});
+	
+	//清空
+	$("#clearBtn").click(function(){
+		$("#btnmenu input,#btnmenu select").val("");
+	});
+});
+
+
+//初始化加载列表
+function initMainList(){
+	$('#table_report').DataTable( {
+		"sDom": "<<'span6'f>r>t<'row-fluid'<'span6'il><'span6'p>>",
+		//"bFilter": false, //去掉自带收索框
+		"serverSide" : true,
+		"bDestroy": true,
+        "ajax": {
+        	url:"admin/order/applist_data",	
+        	type: "POST"
+        },
+		"columns": [
+            { "data": null },//0-序号
+            { "data": "createTime" },
+            { "data": "orderCode" },
+            { "data": "groupNo" },
+            { "data": "payMethod" },
+            { "data": "payOrderId" },
+            { "data": "USERNAME" },
+            { "data": "contactPerson" },
+            { "data": "contactNumber" },
+            { "data": "km"},
+            { "data": "price" },
+            { "data": "assessor" },
+            { "data": "orderState" },
+            { "data": "id" }//10-操作
+            
+        ],
+        "columnDefs": [
+			{
+				"targets": 0,
+				render: function (a, b, c, d) {
+	                return d.row+1;
+				}
+			},
+			{
+				"targets": 1,
+				render : function(a, b, c, d) {
+					var date = new Date(a).format("yyyy-MM-dd hh:mm:ss");
+					return date;
+				}
+			},
+			{
+				"targets": 3,
+				render : function(a, b, c, d) {
+					if(a==null){
+						return "";
+					}else{
+						return a;
+					}
+				}
+			},
+			{
+				"targets": 4,
+				render : function(a, b, c, d) {
+					return getPayType(a);
+				}
+			},
+			{
+				"targets" : 5,
+				render : function(data) {
+					if(data == null){
+						return ""
+					}else{
+						return data;
+					}
+				}
+			},
+			{
+				"targets" : 9,
+				render : function(data) {
+					if(data == null){
+						return ""
+					}else{
+						return data;
+					}
+				}
+			},
+			{
+				"targets" : 10,
+				render : function(data) {
+					if(data == null){
+						return ""
+					}else{
+						return data;
+					}
+				}
+			},
+			{
+				"targets" : 11,
+				render : function(a, b, c, d) {
+					if(a==null){
+						return "";
+					}else{
+						return a;
+					}
+				}
+			},
+			{
+				"targets" : 12,
+				render : function(a, b, c, d) {
+					return getStateDesc(a);
+				}
+			},
+			{
+ 	            "targets": 13,
+ 	           	 render: function (a, b, c, d) {
+	            	var  context =  {
+	 	                    func: [
+		 	                        {"name": "查看", "fn": "toDetail("+c.id+")", "type": "light", "icon":"eye-open"},
+		 	                    ]
+		 	                };
+	            		
+	            	return template(context);
+          		}
+  	        }
+   		]
+    });
+}
+
+function smsDri(formId){
+	var dialog = bootbox.dialog({
+		    message: '<p class="text-center">正在通知司机...</p>',
+		    closeButton: false
+		});
+	$.post("admin/lxy/smsDri/"+formId,function(res){
+		if(res.status == "success"){
+			dialog.find('.bootbox-body').html('已通知所有司机做好准备！');
+		}else{
+			dialog.find('.bootbox-body').html('服务器内部异常！请稍后重试！');
+		}
+	});
+	initMainList();
+	setTimeout(function(){
+		dialog.modal('hide');
+    }, 2000);
+}
+
+
+function doCheck(id){
+	location.href = "admin/order/checkUI/"+id;
+}
+
+
+function toDetail(orderId){
+	window.location.href="<%=basePath %>admin/order/detail/"+orderId;
+}
+
+//删除
+function doDelete(id){
+	 bootbox.confirm("确定要删除吗？",function(result){
+		 if(result){
+			 $.ajax({
+					url : "admin/order/del/"+id,
+					post : "post",
+					success : function(data) {
+						if (data.status == "success") {
+							bootbox.alert("删除成功");
+							$('#table_report').DataTable().clear();
+							$('#table_report').DataTable().draw();
+						} else {
+							bootbox.alert("系统内部异常，请联系维护人员");
+						}
+					}
+				});
+		 }
+		 
+	 });
+	    	
+	   
+}
+
+//获取支付方式
+function getPayType(payType){
+	var desc = "";
+	if(payType == 'alipay'){
+		desc = '支付宝支付';
+	}else if(payType == 'weixinpay'){
+		desc = '微信支付';
+	}
+	return desc;
+}
+
+//获取订单状态描述
+function getStateDesc(orderState){
+	var desc = "";
+	if(orderState == 'WAITPAY'){
+		desc = '待付款';
+	}else if(orderState == 'PAY_OK'){
+		desc = '交易成功';
+	}else if(orderState == 'CLOSED'){
+		desc = '交易关闭';
+	}else if(orderState == 'REFUNDING'){
+		desc = '退款中';
+	}else if(orderState == 'REFUNDING_FAIL'){
+		desc = '退款失败';
+	}else if(orderState == 'REFUNDED'){
+		desc = '退款完成';
+	}else if(orderState == 'DOWNPAYMENT'){
+		desc = '已支付定金';
+	}else if(orderState == 'FINISH'){
+		desc = '已完成';
+	}else if(orderState == 'CHECKING'){
+		desc = '待审核';
+	}else if(orderState == 'CHECKFAIL'){
+		desc = '审核失败';
+	}else if(orderState == '<%=XConst.ORDER_STATE.CHECKSUCCESS%>'){
+		desc = '审核成功';
+	}
+	return desc;
+}
+
+Date.prototype.format = function(format) {
+    var date = {
+           "M+": this.getMonth() + 1,
+           "d+": this.getDate(),
+           "h+": this.getHours(),
+           "m+": this.getMinutes(),
+           "s+": this.getSeconds(),
+           "q+": Math.floor((this.getMonth() + 3) / 3),
+           "S+": this.getMilliseconds()
+    };
+    if (/(y+)/i.test(format)) {
+           format = format.replace(RegExp.$1, (this.getFullYear() + '').substr(4 - RegExp.$1.length));
+    }
+    for (var k in date) {
+           if (new RegExp("(" + k + ")").test(format)) {
+                  format = format.replace(RegExp.$1, RegExp.$1.length == 1
+                         ? date[k] : ("00" + date[k]).substr(("" + date[k]).length));
+           }
+    }
+    return format;
+}
+
+</script>
+		
+</body>
+</html>
+

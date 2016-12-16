@@ -1,0 +1,77 @@
+package com.lx.service.app;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.lx.dao.DaoSupport;
+import com.lx.util.PageData;
+import com.lx.entity.home.Area;
+import com.lx.entity.home.City;
+import com.lx.entity.home.Country;
+
+
+@Service
+@Transactional
+@SuppressWarnings("unchecked")
+public class AddressService {
+	
+	@Resource
+	private DaoSupport dao;
+	
+	
+	//查询所有贵州所有市
+	public List<City> getAllCities() throws Exception{
+		
+		return (List<City>) dao.findForList("AddressMapper.getAllcities", null);
+	}
+	//根据市的Id查询县
+	public List<Area> getAreasByCityId(String cityId) throws Exception{
+		
+		return(List<Area>) dao.findForList("AddressMapper.getAreasByCityId",cityId );
+	}
+	
+	//根据县的ID查询乡镇
+	public List<Country> getCountriesByAreaId(String areaId) throws Exception{
+		
+		return(List<Country>) dao.findForList("AddressMapper.getCountriesByAreaId", areaId);
+	}
+	
+	//根据Id查询所有市
+	public List<City> getCityById(String cityId) throws Exception{
+		return (List<City>)dao.findForList("AddressMapper.getCityById", cityId);
+	}
+	
+	//根据Id查询所有县
+	public List<Area> getAreaById(String areaId) throws Exception{
+		return (List<Area>) dao.findForList("AddressMapper.getAreaById", areaId);
+	}
+	
+	//根据Id查询所有乡镇
+	public List<Country> getCountryById(String countryId) throws Exception{
+		return (List<Country>) dao.findForList("AddressMapper.getCountryById", countryId);
+	}
+	
+	//查询详细地址名字
+	public String getName(String strId) throws Exception {
+		PageData param = new PageData();
+		param.put("countryId", strId);
+		param.put("areaId", strId.substring(0, 6));
+		param.put("cityId", strId.substring(0, 2));
+		
+		System.out.println("---------------areaId------------areaId="+strId.substring(0, 6));
+		System.out.println("---------------cityId------------cityId="+strId.substring(0, 2));
+		PageData res = (PageData)dao.findForObject("AddressMapper.getName", param);
+		String cityName = res.getString("cityName").toString();
+		String areaName = res.getString("areaName").toString();
+		String countryName = res.getString("countryName").toString();
+			System.out.println("---------------getName------------res="+cityName+areaName+countryName);
+		
+		
+		 return cityName+areaName+countryName;
+	}
+	
+}

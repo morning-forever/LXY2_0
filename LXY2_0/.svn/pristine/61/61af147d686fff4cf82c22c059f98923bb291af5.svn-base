@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DriverMapper">
+	
+	<select id="getDriversCount" parameterType="pd" resultType="java.lang.Integer">
+		select count(*) from (select  id,name,tel from lxy_driver  where state = 'ADD'
+	 	<if test="name !=null and name!=''" >
+	 		and name=#{name}
+	 	</if>
+	 	<if test="tel !=null and tel!=''">
+	 		and tel=#{tel}
+	 	</if>) t
+	</select>
+	
+	<select id="getDriverList" parameterType="pd" resultType="pd">
+	 	select  id,name,tel from lxy_driver  where state = 'ADD'
+	 	<if test="name !=null and name!=''" >
+	 		and name=#{name}
+	 	</if>
+	 	<if test="tel !=null and tel!=''">
+	 		and tel=#{tel}
+	 	</if>
+	 	<if test="showLine != null and showLine !='' ">
+	 		limit ${startLine},${showLine}
+	 	</if>
+	</select>
+	
+	<insert id="save" >
+	
+		insert into lxy_driver(create_time,name,tel) values(NOW(), #{name},#{tel})
+		
+	</insert>
+	
+	<select id="getDriverById" parameterType="java.lang.Long" resultType="pd">
+		select id,name,tel from lxy_driver where id = #{driverId}
+	</select>
+	
+	<update id="update" parameterType="pd">
+		update lxy_driver set `name`=#{name},tel=#{tel} where id=#{id}
+	</update>
+	
+	<update id="lgcDeldriverById" parameterType="java.lang.Long">
+		update lxy_driver set state='DEL' where id = #{driverId}
+	</update>
+</mapper>
+

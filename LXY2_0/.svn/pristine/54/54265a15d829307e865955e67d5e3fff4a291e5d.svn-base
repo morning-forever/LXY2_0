@@ -1,0 +1,264 @@
+package com.lx.service.system.lxy;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.session.Session;
+import org.apache.shiro.subject.Subject;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+//import com.bm.webs.controller.util.SMSHelper;
+import com.lx.dao.DaoSupport;
+import com.lx.entity.system.User;
+import com.lx.util.Const;
+import com.lx.util.PageData;
+import com.lx.util.XConst;
+import com.lx.util.emaysms.SMSHelper;
+import com.lx.util.mail.SimpleMailSender;
+
+/**
+ * 
+ * 
+ * 
+ * @author Daisy
+ *
+ */
+@Service
+@Transactional
+@SuppressWarnings("unchecked")
+public class AdminOrderService {
+	
+	@Resource(name="daoSupport")
+	private DaoSupport dao;
+	
+	/**
+	 * 
+	 * @param param
+	 * @return
+	 * @throws Exception
+	 */
+	public PageData findOrderList(PageData param) throws Exception {
+		Integer total = (Integer) dao.findForObject("AdminOrderMapper.findOrderListCount", param);
+		List<PageData> list = (List<PageData>)dao.findForList("AdminOrderMapper.findOrderList", param);
+		param.clear();
+		param.put("data", list);
+		param.put("recordsTotal", total);
+		param.put("recordsFiltered", total);
+		return param;
+	}
+	
+	/**
+	 * 旅行社老大查看自己的订单
+	 * @param param
+	 * @return
+	 * @throws Exception
+	 */
+	public PageData findOrderAppList(PageData param) throws Exception{
+		Integer total = (Integer) dao.findForObject("AdminOrderMapper.findOrderAppListCount", param);
+		List<PageData> list = (List<PageData>)dao.findForList("AdminOrderMapper.findOrderAppList", param);
+		param.clear();
+		param.put("data", list);
+		param.put("recordsTotal", total);
+		param.put("recordsFiltered", total);
+		return param;
+	}
+	
+	
+	public PageData getOrderById(Long id) throws Exception{
+	
+		return (PageData) dao.findForObject("AdminOrderMapper.getOrderById", id);
+		
+	}
+	/**
+	 * 获取深度游退款列表
+	 * @param param
+	 * @return
+	 * @throws Exception
+	 */
+	public PageData findRefundList(PageData param) throws Exception {
+		Integer total = (Integer) dao.findForObject("AdminOrderMapper.findRefundListCount", param);
+		List<PageData> list = (List<PageData>)dao.findForList("AdminOrderMapper.findRefundList", param);
+		param.clear();
+		param.put("data", list);
+		param.put("recordsTotal", total);
+		param.put("recordsFiltered", total);
+		return param;
+	}
+	
+	/**
+	 * 审核
+	 * @throws Exception
+	 */
+	public void saveCheck(PageData param) throws Exception {
+		//修改审核状态为已审核
+		dao.update("AdminOrderMapper.updateCheck", param);
+	}
+	
+	/**
+	 * 退款成功和退款失败
+	 * @param param
+	 * @throws Exception
+	 */
+	public void saveRefund(PageData param) throws Exception {
+		//新增一条审核记录
+		dao.save("AdminOrderMapper.addExamine", param);
+		
+		//修改订单状态
+		PageData orderData = new PageData();
+		orderData.put("orderId", param.get("orderId"));
+		orderData.put("oldState", "REFUNDING");
+		orderData.put("newState", param.get("state"));
+		dao.update("OrderFormMapper.updateOrderState", orderData);
+		
+		//若退款成功，则修改退款完成时间
+		if(param.getLong("result") == 0){
+			dao.update("AdminOrderMapper.updateCheck", param);
+			//更新车辆使用状态
+			PageData orderInfo=(PageData) dao.findForObject("OrderFormMapper.findOrderDetail", orderData);	
+			PageData pd = new PageData();
+			pd.put("carStateIds", orderInfo.getString("stateIds"));
+			dao.update("CarManagerMapper.updateCarState", pd);
+		}
+		
+		//退库成功和退款失败都发送短信
+		//PageData mesInfo = findRefundInfo(param.getLong("orderId"));
+		/*String mobile = mesInfo.getString("person_phone");
+		String refundResult = (param.getLong("result") == 0)?"退款成功":"退款失败";
+		String mes = "尊敬的"+mesInfo.getString("person_name")+"，您的订单号："+mesInfo.getString("order_code")+refundResult
+				+"，如有疑问请联系黔易游客服：" + ConfigLoad.getStringValue("SMS.CONTENT_TEL") + "，我们将竭诚为您服务，祝您旅途愉快！";
+		//SMSHelper.sendSMS(mobile, mes);*/
+	}
+	
+	/**
+	 * 检验订单是否可以审核 只有退款中的订单才可以审核
+	 * @param orderId
+	 * @return
+	 * @throws Exception
+	 */
+	public boolean checkExamine(Long orderId) throws Exception {
+		PageData param = new PageData();
+		param.put("orderId", orderId);
+		Integer total = (Integer) dao.findForObject("AdminOrderMapper.checkExamine", param);
+		if(total == 0){
+			return false;
+		}
+		return true;
+	}
+	
+	/**
+	 * 获取审核记录列表
+	 * @param orderId
+	 * @return
+	 * @throws Exception
+	 */
+	public List<PageData> findExamineList(Long orderId) throws Exception {
+		PageData param = new PageData();
+		param.put("orderId", orderId);
+		return (List<PageData>)dao.findForList("AdminOrderMapper.findExamineList", param);
+	}
+	
+	/**
+	 * 获取审核记录信息
+	 * @param orderId
+	 * @return
+	 * @throws Exception
+	 */
+	public PageData findRefundInfo(Long orderId) throws Exception {
+		PageData param = new PageData();
+		param.put("orderId", orderId);
+		return (PageData)dao.findForObject("AdminOrderMapper.findRefundInfo", param);
+	}
+	
+	
+	/**
+	 * 路线审核-通过
+	 * @param param
+	 * @throws Exception
+	 */
+	public void checkSuccess(PageData param) throws Exception{
+		
+		//更新订单状态为WAITPAY（待支付）,审核人为当前管理员
+		
+		Subject currentUser = SecurityUtils.getSubject();  
+		Session session = currentUser.getSession();
+		User user = (User)session.getAttribute(Const.SESSION_USER);
+		String assessor = user.getUSER_ID();
+		param.put("assessor", assessor);
+		dao.update("AdminOrderMapper.updateToCheckSuccess", param);
+		//更新总公里数
+		dao.update("AdminOrderMapper.editTotalKm", param);
+	
+		//根据总公里数更新价格
+		dao.update("AdminOrderMapper.updatePrice", param);
+		
+		//审核通过后通知前台用户去支付
+		
+		//1.获取联系人信息
+		PageData personInfo = (PageData) dao.findForObject("AdminOrderMapper.getPersonInfo", param);
+		
+		//2.获取订单总公里数和价格
+		PageData  tkPrice = (PageData) dao.findForObject("AdminOrderMapper.getTkPriceById", param);
+		
+		//3.订单号
+		String orderCode = (String) dao.findForObject("AdminOrderMapper.getOrderCodeById", param);
+		String message = "您的订单审核成功，总公里数:"+tkPrice.getInt("totalKm")+",总价格:"+tkPrice.getDouble("price")+",订单号:"+orderCode;
+		//4.短信通知
+		SMSHelper.sendSms(personInfo.getString("personPhone"),message );
+		//5.邮件通知
+		SimpleMailSender.sendEmail(personInfo.getString("personEmail"), "订单审核通过", message, "2");
+	}
+	
+	/**
+	 * 路线审核-失败
+	 * @param param
+	 * @throws Exception
+	 */
+	public void checkFail(PageData param) throws Exception{
+		//一、更新订单状态为 CHECKFAIL,审核人为当前管理员
+		Subject currentUser = SecurityUtils.getSubject();  
+		Session session = currentUser.getSession();
+		User user = (User)session.getAttribute(Const.SESSION_USER);
+		String assessor = user.getUSER_ID();
+		param.put("assessor", assessor);
+		dao.update("AdminOrderMapper.updateToCheckFail", param);
+		
+		//二、释放车辆
+		List<String> carStateList=  (List<String>) dao.findForList("AdminOrderMapper.getCarStateIdsByOrderId", param);
+		
+		PageData carStateparam = new PageData();
+		for(String carStateIds : carStateList){
+			
+			carStateparam.put("carStateIds", carStateIds);
+			dao.update("CarManagerMapper.updateCarState", carStateparam);
+		}
+		
+		//三、审核失败后通知前台用户
+		
+		//1.获取联系人信息
+		PageData personInfo = (PageData) dao.findForObject("AdminOrderMapper.getPersonInfo", param);
+		//2.获取订单号
+		String orderCode = (String) dao.findForObject("AdminOrderMapper.getOrderCodeById", param);
+		
+		String message = "对不起！您的订单未审核成功！订单号："+orderCode;
+		
+		//3.短信通知
+		SMSHelper.sendSms(personInfo.getString("personPhone"),message );
+		//4.邮件通知
+		SimpleMailSender.sendEmail(personInfo.getString("personEmail"), "订单审核未通过", message, "2");
+		
+		
+	}
+	
+	/**
+	 * 删除订单
+	 * 
+	 * @param pd
+	 * @throws Exception
+	 */
+	public void lgcDelById(Long orderId) throws Exception {
+		dao.update("AdminOrderMapper.lgcDelById", orderId);
+	}
+}

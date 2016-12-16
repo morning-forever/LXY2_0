@@ -1,0 +1,743 @@
+<%@ page language="java" import="com.lx.util.XConst" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%
+	String path = request.getContextPath();
+	String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
+%>
+
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta content="text/html">
+<base href="<%=basePath%>">
+<meta name="renderer" content="webkit|ie-comp|ie-stand">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+<!--[if lt IE 9]>
+<script type="text/javascript" src="static/h-ui-lib/html5.js"></script>
+<script type="text/javascript" src="static/h-ui-lib/respond.min.js"></script>
+<script type="text/javascript" src="static/h-ui-lib/PIE_IE678.js"></script>
+<![endif]-->
+<link rel="stylesheet" type="text/css" href="static/h-ui/css/H-ui.css" />
+<link rel="stylesheet" type="text/css" href="static/h-ui-lib/Hui-iconfont/1.0.7/iconfont.css" />
+<link rel="stylesheet" type="text/css" href="static/h-ui-lib/icheck/icheck.css" />
+<link rel="stylesheet" type="text/css" href="static/css/jquery.datetimepicker.css"/>
+<link rel="stylesheet" type="text/css" href="static/app/pc/css/style2.0.css"/>
+
+<!--[if lt IE 9]>
+<link href="static/h-ui/css/H-ui.ie.css" rel="stylesheet" type="text/css" />
+<![endif]-->
+<!--[if IE 6]>
+<script type="text/javascript" src="static/h-ui-lib/DD_belatedPNG_0.0.8a-min.js" ></script>
+<script>DD_belatedPNG.fix('*');</script>
+<![endif]-->
+<title>预定车辆</title>
+<meta name="keywords" content="">
+<meta name="description" content="">
+</head>
+<body>
+<header class="navbar-wrapper">
+	<jsp:include page="../../common/header.jsp"></jsp:include>
+</header>
+<!-- <a href="lxy/test">xxxxxxxxxxxxx</a> -->
+<form id="myForm" action="lxy/order/edit" method="post" onsubmit="return check_form()">
+	<input type="hidden" name="orderId" value="${orderForm.id}">
+	<div class="main-wrap">
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<section class="container cl">
+					<div class="mt-30 cl">
+						<div class="lxy-complex-btn f-l">
+							<span class="c-left text-c">上团日期</span>
+							<span class="lxy-pipe">|</span>
+							<div class="c-right">
+								<input type="text" readonly="readonly" class="input-text lxy-input-text" placeholder="请选择日期" name="startTime" id="startTime"  value="${orderForm.startTime }" datatype="" nullmsg="" />
+								<span class="i-date"><i class="Hui-iconfont">&#xe690;</i></span>	
+							</div>
+						</div>
+						
+						<div class="lxy-complex-btn f-l ml-50">
+							<span class="c-left text-c">接团</span>
+							<span class="lxy-pipe">|</span>
+							<div class="c-right">
+								<input type="text" class="input-text lxy-input-text" placeholder="填写贵阳市内地点(选填)" name="jtSite" id="jtSite" value="${orderForm.jtSite }" datatype="" nullmsg="" />
+							</div>
+						</div>
+						
+						<div class="f-l ml-10">
+							<span style="line-height:50px;">接送地点限制为贵阳市内的火车站、高铁站、客运站、机场</span>
+						</div>
+					</div>
+					
+					<div class="mt-20 cl">
+						<div class="lxy-complex-btn f-l">
+							<span class="c-left text-c">下团日期</span>
+							<span class="lxy-pipe">|</span>
+							<div class="c-right">
+								<input type="text" readonly="readonly" class="input-text lxy-input-text" placeholder="请选择日期" name="endTime" id="endTime" value="${orderForm.endTime }" datatype="" nullmsg="" />
+								<span class="i-date"><i class="Hui-iconfont">&#xe690;</i></span>	
+							</div>
+						</div>
+						
+						<div class="lxy-complex-btn f-l ml-50">
+							<span class="c-left text-c">送团</span>
+							<span class="lxy-pipe">|</span>
+							<div class="c-right">
+								<input type="text" class="input-text lxy-input-text" placeholder="填写贵阳市内地点(选填)" name="stSite" id="stSite" value="${orderForm.stSite}" datatype="" nullmsg="" />
+							</div>
+						</div>
+						
+						<div class="f-l ml-10">
+							<span style="line-height:50px;" id="dayNum">租期4天</span>
+						</div>
+					</div>
+					
+					<div class="mt-20 cl mb-30">
+						<div class="lxy-complex-btn f-l" style="width:250px;">
+							<span class="c-left text-c" style="width:28%;">出团人数</span>
+							<span class="lxy-pipe">|</span>
+							<div class="c-right" style="width:60%;">
+								<input type="text" class="input-text lxy-input-text" placeholder="输入人数" name="headcount" id="headcount" value="${orderForm.headcount }" datatype="" nullmsg="" />
+							</div>
+						</div>
+						
+						<div class="lxy-complex-btn f-l ml-50" style="width:290px;">
+							<span class="c-left text-c" style="width:20%;">团号</span>
+							<span class="lxy-pipe">|</span>
+							<div class="c-right" style="width:70%;">
+								<input type="text" class="input-text lxy-input-text" placeholder="输入团号(选填)" name="groupNo" id="groupNo" value="${orderForm.groupNo }"  datatype="" nullmsg="" />
+							</div>
+						</div>
+					</div>
+				</section>
+			</div>
+		</div>
+		
+		<section class="container  mt-40">
+			<div class="panel cl home-item">
+				<div class="item-title mt-30">
+					填写线路
+				</div>
+				<div class="panel panel-default mt-30 mb-50 pd-20" style="background-color:#f5f6f6;">
+					<span>填写格式:贵阳—黄果树—天星桥—徒坡塘瀑布—西江苗寨—小七孔—贵阳</span>
+					<textarea onfocus="check_time(this)"  onkeyup="check_format(this)"  id="route" name="route" cols="" rows="2" class="textarea lxy-textarea lxy-textarea-bc mt-20"  placeholder="请在这里输入路线" datatype="*10-500" nullmsg="备注不能为空！" >${orderForm.route }</textarea>
+				</div>
+			</div>
+			
+			<div class="panel cl home-item mt-40 car-info">
+				<div class="item-title mt-30">
+					选择车型
+				</div>
+				<div class="car_show mt-30" >
+					<table class="table table-border radius">
+						<thead class="text-c" style="background-color:#90d3db;">
+						    <tr>
+								<th>车名</th>
+								<th>车牌号</th>
+								<th>座位数</th>
+								<th>价格</th>
+						    </tr>
+						</thead>
+						<tbody class="text-c" style="background-color:#ebf7f8;" id="cars">
+							<c:forEach items="${cars}" var="car">
+								<tr>
+									<td>${car.typeName }</td>
+									<td>${car.plateNum }</td>
+									<td>${car.seatNum }</td>
+									<td>${car.price }</td>
+								</tr>
+							</c:forEach>
+						</tbody>
+					</table>
+				</div>
+				<div class="car_show_btn" style="padding:25px 0;text-align:center;">
+					<input id="car_show_btn" class="btn btn-lxy-hollow radius size-XL" type="button" value="重新选择" onclick="selectCar()" />
+				</div>
+			</div>
+			
+			<div class="panel cl home-item mt-40">
+				<div class="item-title mt-30"></div>
+				<div class="cl">
+					<div class="cl f-l">
+						<label class="f-l c-red f-24 mt-10">*</label>
+						<div class="lxy-complex-btn f-l ml-5">
+							<div class="c-right" style="width:100%;">
+								<input type="text" class="input-text lxy-input-text lxy-input-text-bc" placeholder="联系人\计调" name="contactPerson" id="contactPerson" value="${orderForm.contactPerson }" datatype="" nullmsg="" />
+								<span class="i-date"><i class="Hui-iconfont">&#xe60a;</i></span>	
+							</div>
+						</div>
+					</div>
+					
+					<div class="cl f-l ml-50">
+						<label class="f-l c-red f-24 mt-10">*</label>
+						<div class="lxy-complex-btn f-l ml-5">
+							<div class="c-right" style="width:100%;">
+								<input type="text" class="input-text lxy-input-text lxy-input-text-bc" placeholder="联系方式" name="contactNumber" id="contactNumber" value="${orderForm.contactNumber }" datatype="" nullmsg="" />
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="cl mt-20">
+					<div class="cl f-l" style="margin-left:16px;">
+						<div class="lxy-complex-btn mt-20">
+							<div class="c-right" style="width:100%;">
+								<input type="text" class="input-text lxy-input-text lxy-input-text-bc" placeholder="导游" name="guide" id="guide" value="${orderForm.guide }" datatype="" nullmsg="" />
+								<span class="i-date"><i class="Hui-iconfont">&#xe60a;</i></span>	
+							</div>
+						</div>
+					</div>
+					<div class="cl f-l" style="margin-left:66px;">
+						<div class="lxy-complex-btn mt-20">
+							<div class="c-right" style="width:100%;">
+								<input type="text" class="input-text lxy-input-text lxy-input-text-bc" placeholder="联系方式" name="guideContactNumber" id="guideContactNumber" value="${orderForm.guideContactNumber }" datatype="" nullmsg="" />
+							</div>
+						</div>
+					</div>
+				</div>
+				<textarea id="remark" name="remark" cols="" rows="" class="textarea lxy-input-text remark-texttarea"  placeholder="备注\其他特殊需求:" datatype="*10-500" nullmsg="备注不能为空！" >${orderForm.remark }</textarea>
+			</div>
+		</section>
+		
+		<div class="text-c mt-40">
+			<input class="btn btn-lxy-solid size-XL radius" type="submit" value="确认修改"/>
+		</div>
+	</div>
+</form>
+
+<jsp:include page="../../common/footer.jsp"></jsp:include>
+	
+<script id="selectcarpopup" type="text/template">
+	<div class="panel panel-default car_select_popup" id="car_select_popup">
+		<div class="panel-body car_select">
+			<table class="table table-border table-bordered radius car_select_table">
+				<thead class="text-c">
+					<tr>
+						<th></th>
+						<th>车辆类型</th>
+						<th>座位数</th>
+						<th>单价</th>
+						<th>剩余数量(辆)</th>
+						<th>预定数量(辆)</th>
+					</tr>
+					<tbody class="text-c">
+					</tbody>
+				</thead>
+			</table>
+		</div>
+	</div>
+	<div class="popupBtn">
+		<input class="btn btn-primary size-L radius" type="button" value="确定" onclick="selectCarOk(this)" />
+		<input class="btn btn-primary size-L radius" type="button" value="取消" onclick="cancelCarOk(this)" />
+	</div>
+</script>
+	
+<script type="text/javascript" src="static/h-ui-lib/jquery/1.9.1/jquery.min.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/layer/2.1/layer.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/laypage/1.2/laypage.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/My97DatePicker/WdatePicker.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/icheck/jquery.icheck.min.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/bootstrap-Switch/bootstrapSwitch.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/Validform/5.3.2/Validform.min.js"></script> 
+<script type="text/javascript" src="static/h-ui-lib/Validform/5.3.2/passwordStrength-min.js"></script>
+<script type="text/javascript" src="static/js/jquery.datetimepicker.js"></script>
+<!-- 收索 -->
+<script language="javascript" type="text/javascript" src="static/h-ui-lib/jQuery.autocomplete/1.1/jquery.autocomplete.js"></script>
+<script type="text/javascript" src="static/h-ui/js/H-ui.js"></script>
+<script type="text/javascript" src="static/app/pc/js/base.js"></script>
+
+<script>
+//var navigation = responsiveNav("Hui-navbar", {customToggle: ".nav-toggle"});
+
+
+//var navigation = responsiveNav("Hui-navbar", {customToggle: ".nav-toggle"});
+$.ajaxSetup({   
+    contentType:"application/x-www-form-urlencoded;charset=utf-8",   
+    complete:function(XMLHttpRequest,textStatus){ 
+      var sessionstatus=XMLHttpRequest.getResponseHeader("session_status"); //通过XMLHttpRequest取得响应头，sessionstatus，  
+	         if(sessionstatus=="timeout"){ 
+	        	layer.msg("登录超时,请重新登录！");
+	         //如果超时就处理 ，指定要跳转的页面  
+	           window.location.replace("");   
+	         }   
+       }   
+  });
+(function ($) {
+	   	$('#jtSite, #stSite').autocomplete('lxy/car/getJstSiteListByKw', {
+	        selectFirst: true,
+	        matchContains :false,
+	        minChars: 1, 
+	        dataType: "json",
+	        multiple : false,
+	        matchSubset : false,
+	        parse: function(data) 
+	        {
+	          	var parsed = [];
+	           for(var i=0;i<data.length;i++){
+	        	   parsed[i]={
+	        			data:data[i],
+	   					value:data[i].name,
+	   					result:data[i].name
+	        	   }
+	           }
+	            return parsed; 
+	        } ,
+	       formatItem: function(data) {
+	    		return "<p>"+data['name']+"</p>&nbsp;<p>("+data['km']+"km)</p>";
+	        }
+	    });
+	  
+	   	
+	   	$('#route').autocomplete('lxy/car/getRouteListByKw', {
+	        selectFirst: true,
+	        matchContains :false,
+	        minChars: 1, 
+	        dataType: "json",
+	        multiple : false,
+	        matchSubset : false,
+	        max:20,
+	        extraParams:{"dayNum":function (){
+	        	var startTime = new Date($("#startTime").val());
+	        	var endTime = new Date($("#endTime").val());
+				var dayNum = (endTime.getTime()-startTime.getTime())/(24*60*60*1000);
+				return Math.ceil(dayNum)+1;
+	        }},
+	        parse: function(data) 
+	        {
+	          	var parsed = [];
+	           for(var i=0;i<data.length;i++){
+	        	   parsed[i]={
+	        			data:data[i],
+	   					value:data[i].content,
+	   					result:data[i].content
+	        	   }
+	           }
+	            return parsed; 
+	        } ,
+	       formatItem: function(data) {
+	    		return "<p>"+data['content']+"&nbsp;("+data['km']+"km)&nbsp;"+data['dayNum']+"天</p>";
+	        }
+	    });
+	   	
+   })(jQuery);
+  
+   
+$(function(){
+	//初始化顶部导航
+	$('#orderCar').addClass("current");
+	$('#startTime').datetimepicker({
+		lang:'ch',
+		format:'Y-m-d H:i:00',
+		minDate:0,
+		step:15,
+		onSelectDate:function(selectedDate){
+			/* alert(selectedDate.format("yyyy-MM-dd"));
+			selectedDate = selectedDate.format("yyyy-MM-dd");
+			alert(selectedDate); 
+			$('#endTime').datetimepicker({"minDate":selectedDate}); */
+			
+			var endTime = $('#endTime').val();
+			if(endTime != ""){
+				endTime = new Date(endTime);
+				var dayNum = (endTime.getTime()-selectedDate.getTime())/(24*60*60*1000);
+				$("#dayNum").text("租期"+(Math.ceil(dayNum)+1)+"天");
+			} 
+			
+		}
+	});
+	$('#endTime').datetimepicker({
+		lang:'ch',
+		format:'Y-m-d',
+		timepicker:false,
+		minDate:0,
+		onSelectDate:function(selectedDate){
+			var startTime = $('#startTime').val();
+			if(startTime != ""){
+				startTime = new Date(startTime);
+				var dayNum = (new Date(selectedDate.format("yyyy-MM-dd 00:00:00")).getTime()-startTime.getTime())/(24*60*60*1000);
+				$("#dayNum").text("租期"+(Math.ceil(dayNum)+1)+"天");
+			} 
+		}
+	});
+});
+
+
+var layerIndex=0;
+
+//填路线前,先填时间
+function check_time(obj){
+	var startTime = $("#startTime").val();
+	var endTime = $("#endTime").val();
+	if(startTime == "" || startTime == null){
+		alert("请先填写开始时间");
+		obj.blur();
+		return;
+	}
+	if(endTime == "" || endTime == null){
+		alert("请先填写结束时间");
+		obj.blur();
+		return;
+	}
+	
+}
+
+//点击选择车辆之后，列表展示可用的车
+function selectCar() {
+	var startTime = $("#startTime").val();
+	var endTime = $("#endTime").val();
+	
+	if(startTime == "" || startTime == null){
+		layer.msg("请填写开始时间");
+		return false;
+	}
+	if(endTime == "" || endTime == null){
+		layer.msg("请填写结束时间");
+		return false;
+	}
+	
+	
+	if($("#headcount").val()== ""){//要根据出团人数来判断所选的车总座位数是否足够，所以选车之前出团人数是必填的
+		layer.msg("请填写出团人数");
+		return false;
+	}else{
+		var regExp = new RegExp("^[1-9]{1}[0-9]*$");
+		if(!regExp.test($("#headcount").val())){
+			layer.msg("所填写的出团人数不合法");
+			return false;
+		}
+	}
+	
+	var param = {
+		"startTime":startTime,
+		"endTime":endTime
+	};
+	
+	$.post('<%=basePath %>lxy/car/available_cars',param,function(res){
+		if(res.status == "success"){
+			layerIndex = layer.open({
+				  type: 1,
+				  title:"车辆选择",
+				  skin: 'layui-layer-demo', //样式类名
+				  closeBtn: 1, //不显示关闭按钮
+				  area: ['800px', '580px'], //宽高
+				  anim: 2,
+				  scrollbar:false,
+				  shadeClose: true, //开启遮罩关闭
+				  content: $("#selectcarpopup").html(),
+				  success: function(layer, index){
+						for(var i=0; i<res.carList.length; i++){
+							var html = '<tr>';
+							html +='<td><input type="checkbox" id="sc" name="checkbox2"></td>';
+							html +='<td>'+res.carList[i].name+'<input type="hidden" id="typeId" value='+res.carList[i].typeId+'><input type="hidden" id="typeName" value='+res.carList[i].name+' /></td>';
+							html +='<td>'+res.carList[i].seatNum+'<input type="hidden" id="seatNum" value='+res.carList[i].seatNum+' ></td>';
+							html +='<td>￥'+res.carList[i].price+'/km</td>';
+							html +='<td>'+res.carList[i].availableCarNum+'</td>';
+							html +='<td><button id="del_num_btn" class="del_num_btn" onclick="delCarNum(this)">-</button><input type="hidden" id="total" value='+res.carList[i].availableCarNum+'><input id="car_num" class="car_num" type="text" readonly="readonly" value="0"><button class="add_num_btn" onclick="addCarNum(this)">+</button></td>';
+							html +='</tr>';
+						
+							$(".car_select_popup .car_select_table tbody").append(html);
+    					}
+				 	 }
+				});
+		}else if(res.status == "exception"){
+			
+			alert("对不起，系统异常，我们正在维护！");
+		}
+	});
+}
+
+
+var  carIsModified=false;
+var totalSeat; //总共有多少个座位
+//选好车，点击确定之后，请求后台分配车辆
+function selectCarOk(obj){
+	
+	var selectCarNum = 0;//总共选了多少辆（不分种类）
+	var needCars = [];//车的需求概况
+	var isZero = false;//是否有某一种车勾选了，但所选的车辆数目为0
+	totalSeat = 0;
+	//下面获取页面的值来定义needCars的值
+	$(":checkbox[id=sc]").each(function(index){
+        if(this.checked){
+        	var carTypeId=$(this).parent().parent().find("#typeId").val();
+			var carNum=$(this).parent().parent().find("#car_num").val();
+			var carTypeName = $(this).parent().parent().find("#typeName").val();
+			var carSeatNum = $(this).parent().parent().find("#seatNum").val();
+			if(carNum=='0'){
+				isZero = true;
+				return false;//跳出所有循环
+			}else{
+				selectCarNum = Number(carNum)+Number(selectCarNum);
+				totalSeat += carSeatNum*carNum;
+			}
+			var carType = {"typeId":carTypeId,"count":carNum};
+			needCars.push(carType);
+        }
+    });
+	
+	
+	if(isZero){
+		layer.msg("每一种车打勾以后至少要选择1辆，不能是0辆");
+		return false;
+	}
+	
+	//alert(JSON.stringify(needCars));
+	
+	//车辆总数不能大于3,如果大于不让锁车
+	if(selectCarNum > 3){
+		layer.msg("最多只能选3辆车");
+		return false;
+	}
+	
+	if(parseInt($("#headcount").val())>totalSeat){
+		layer.msg("座位不够坐");
+		return false;
+	}
+	//提交需求，请求分配车辆（后台要进行锁定）
+
+	//1.定义号请求参数
+	var startTime = $("#startTime").val();
+	var endTime = $("#endTime").val();
+	
+	var param = {
+			startTime:startTime,
+			endTime:endTime,
+			needCars:needCars
+		};
+	
+	param = JSON.stringify(param);
+	//2.发送锁车请求
+	$.ajax({
+		'type' : 'POST',  
+        'url' : '<%=basePath %>lxy/car/lockCar',  
+	    'contentType' : 'application/json', 
+        'data' : param,
+        'dataType' : 'json',  
+        'success' : function(res){
+        	if(res.status == 'success'){
+    			//$(".car_show_btn").hide();
+    			$(".car_show tbody").empty();
+    			//alert(JSON.stringify(res.carStateIds));
+    			//alert(JSON.stringify(res.lockedCars));
+    			for(var i=0; i < res.lockedCars.length; i++){
+    				//alert(JSON.stringify(res.lockedCars));
+    				var html = '<tr>';
+    				html +='<td>'+res.lockedCars[i].name+'</td>';
+    				html +='<td>'+res.lockedCars[i].plateNum+'</td>';
+    				html +='<td>'+res.lockedCars[i].seatNum+'</td>';
+    				html +='<td>￥'+res.lockedCars[i].price+'/km</td>';
+    				html +='</tr>';
+    				$(".car_show tbody").append(html);
+    			}
+    			$(".car_show").show();
+    			$("#car_show_btn").val("重新选择");
+    			carIsModified = true;
+    			layer.close(layerIndex);
+    		}else if(res.message != undefined){
+    			layer.msg(res.message);
+    		}else if(res.status == 'unlogin'){
+    			layer.msg("请先登录");
+    		}else if(res.status == 'exception'){
+    			layer.msg("对不起，系统内部错误，我们正在维护...");
+    		}
+        }  
+      });
+}
+
+function cancelCarOk(){
+	layer.close(layerIndex);
+}
+
+function delCarNum(obj){
+	$(obj).css({"color":"#333"});
+	//成人数量减1
+	var num = $(obj).parent().find(".car_num").val();
+	if(num==0){
+		return;
+	}
+	
+	$(obj).parent().find(".car_num").val(parseInt(num)-1);
+
+	
+	if($(obj).parent().find(".car_num").val()==1){
+		$(obj).css({"cursor":"not-allowed"});
+	}
+}
+
+function addCarNum(obj){
+	$(obj).css({"color":"#333"});
+	//成人数量减1
+	var num = $(obj).parent().find(".car_num").val();
+	var totalNum = $(obj).parent().find("#total").val();
+	if(num==totalNum){
+		return;
+	}
+	
+	$(obj).parent().find(".car_num").val(parseInt(num)+1);
+
+	
+	if($(obj).parent().find(".car_num").val() == totalNum){
+		$(obj).css({"cursor":"not-allowed"});
+	}
+}
+
+//当有字符输入时，检查路线格式是否正确
+function check_format(obj){
+	
+	/* var keyCode = event.keyCode;
+	alert(keyCode);
+	if((48<=keyCode && keyCode<=57) || (keyCode>= 65 && keyCode<=90) || (keyCode>=96 && keyCode<=105) || (keyCode==189)){
+		alert(keyCode);
+	} */
+	var rouStr = $(obj).val();
+	rouStr.replace(/[\r\n/]/,"");
+	if(rouStr != "" ){
+		var regExp1 = new RegExp("^[\u4E00-\u9FA5a-zA-Z0-9]+(——|[\u4E00-\u9FA5a-zA-Z0-9])?$");//正确格式
+		var regExp2 = new RegExp("^[\u4E00-\u9FA5a-zA-Z0-9]+——{2,}$");//连着输入了两个‘——’
+		var regExp3 = new RegExp("^[\u4E00-\u9FA5a-zA-Z0-9——]+$");//输入了汉字、数字、英文字母和‘——’（用于否定）
+		var is_legal = regExp1.test(rouStr);
+		if(is_legal){
+			 
+		} else if(regExp2.test(rouStr)){
+			alert("不能连输两个及两个以上‘——’");
+		}else if(!regExp3.test(rouStr)){
+			alert("只能输入汉字、数字、英文字母和‘——’哟！");
+		}
+	} 
+}
+
+//提交表单时，检查路线是否完整
+function check_form(){
+	
+	//上下团时间校验
+	var startTime = $("#startTime").val();
+	startTime = new Date(new Date(startTime).format("yyyy-MM-dd"));
+	var endTime = $("#endTime").val();
+	endTime = new Date(endTime);
+	
+	if(endTime<startTime){
+		alert("下团 时间不能早于上团时间");
+		return false;
+	}
+	
+	
+	
+	if(carIsModified){//如果修改过车辆
+		//检验车辆锁定是否过时
+		var isCarTimeOut; 
+		$.ajax({
+			url:"lxy/car/isCarTimeOut",
+			async:false,
+			type:"post",
+			success:function(res){
+				isCarTimeOut=res.status
+			},
+			dataType:"json",
+		});
+		if(isCarTimeOut){
+			layer.msg("车辆锁定超时，请重新选择车辆");
+			return false;
+		}
+	}else{//如果没有修改过车辆
+		//不检验车辆是否锁定超时，但要取原来锁定的车来计算totalSeat（总座位数）
+		var cars = JSON.parse('${jsonCars}');
+		totalSeat = 0;
+		for(var i=0;i<cars.length;i++){
+			totalSeat+=cars[i].seatNum;
+		}
+	}
+	//检测所有车辆的总座位数是否够坐
+	if($.trim($("#headcount").val())== ""){
+		layer.msg("请填写出团人数");
+		return false;
+	}else{
+		var regExp = new RegExp("^[1-9]{1}[0-9]*$");
+		if(!regExp.test($("#headcount").val())){
+			layer.msg("所填写的出团人数格式不对");
+			return false;
+		}else if(totalSeat<parseInt($("#headcount").val())){
+			layer.msg("座位数不够坐，请重新选择车辆");
+			return false;
+		}
+	}
+	
+	if($("#cars tr:eq(0)").html() == undefined){
+		alert("请选择车辆");
+		return false;
+	}
+	//联系人必填
+	var contactPerson = $("#contactPerson").val();
+	if(contactPerson==""){
+		layer.msg("请填写联系人");
+		return false;
+	}
+	//联系电话必填且必是数字
+	var contactNumber = $("#contactNumber").val();
+	if(contactNumber==""){
+		alert("请填写联系电话");
+		return false;
+	}else{
+		var regExp = new RegExp("^[0-9]+$");
+		if(!regExp.test(contactNumber)){
+			alert("联系电话格式不正确");
+			return false;
+		}
+		
+	}
+	//导游及其联系方式必是成对出现
+	var guide = $("#guide").val();
+	var guideContactNumber = $("#guideContactNumber").val();
+	if((guide!=""&&guideContactNumber == "") || (guide=="" &&guideContactNumber!="" )){
+		alert("导游和导游联系电话应都填或都不填");
+		return false;
+	}
+	return true;
+	
+	
+	
+	/* var rouStr = $("#route").val();
+	var regExp = new RegExp("^([\u4E00-\u9FA5a-zA-Z0-9]+——)+[\u4E00-\u9FA5a-zA-Z0-9]+$");
+	if(!regExp.test(rouStr)){
+		alert("请完善路线")
+		return false;
+	} */
+	
+}
+
+/* function freeCars(){
+	if($(".car_show tbody").html() != ""){
+		$.post("lxy/car/freeCars");
+	}
+		
+} */
+
+
+Date.prototype.format = function(format) {
+    var date = {
+           "M+": this.getMonth() + 1,
+           "d+": this.getDate(),
+           "h+": this.getHours(),
+           "m+": this.getMinutes(),
+           "s+": this.getSeconds(),
+           "q+": Math.floor((this.getMonth() + 3) / 3),
+           "S+": this.getMilliseconds()
+    };
+    if (/(y+)/i.test(format)) {
+           format = format.replace(RegExp.$1, (this.getFullYear() + '').substr(4 - RegExp.$1.length));
+    }
+    for (var k in date) {
+           if (new RegExp("(" + k + ")").test(format)) {
+                  format = format.replace(RegExp.$1, RegExp.$1.length == 1
+                         ? date[k] : ("00" + date[k]).substr(("" + date[k]).length));
+           }
+    }
+    return format;
+}
+
+
+</script>
+</body>
+</html>

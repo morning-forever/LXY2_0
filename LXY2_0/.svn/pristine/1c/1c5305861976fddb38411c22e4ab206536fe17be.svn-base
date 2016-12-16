@@ -1,0 +1,64 @@
+package com.lx.service.app;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.lx.dao.DaoSupport;
+import com.lx.util.PageData;
+
+
+@Service
+@Transactional
+@SuppressWarnings("unchecked")
+public class AdditionalChargesService {
+	
+	@Resource
+	private DaoSupport dao;
+	
+	public List<PageData> getAdditionalCharges() throws Exception {
+		return (List<PageData>)dao.findForList("AdditionalChargesMapper.getAdditionalCharges", null);
+	}
+	
+	public List<PageData> getAdditionalChargesByIds(PageData pd) throws Exception {
+		String addChargesIds = pd.getString("addChargesIds");
+		System.out.println("------getAdditionalChargesByIds-----addChargesIds="+addChargesIds);
+		if(addChargesIds==null || addChargesIds.length()==0 ){	
+			return null;
+		}
+		return (List<PageData>)dao.findForList("AdditionalChargesMapper.getAdditionalChargesByIds", pd);
+	}
+	
+	public void saveAdditionalCharges(PageData pd) throws Exception {
+		dao.save("AdditionalChargesMapper.saveAdditionalCharges", pd);
+	}
+	
+	public void deleteAdditionalCharges(PageData pd) throws Exception {
+		dao.update("AdditionalChargesMapper.deleteAdditionalCharges", pd);
+	}
+	
+	public void updateAdditionalCharges(PageData pd) throws Exception {
+		dao.save("AdditionalChargesMapper.updateAdditionalCharges", pd);
+	}
+	
+	
+	/*后台获取附加信息列表
+	 * */
+	
+	public PageData getAdditionalChargesById(PageData pd) throws Exception {
+		return (PageData)dao.findForObject("AdditionalChargesMapper.getAdditionalChargesById", pd);
+	}
+	
+	public PageData getAdditionalChargesList(PageData param) throws Exception{
+		Integer total = (Integer) dao.findForObject("AdditionalChargesMapper.getAdditionalChargesCount", param);
+		List<PageData> list = (List<PageData>)dao.findForList("AdditionalChargesMapper.getAdditionalChargesList", param);
+		param.clear();
+		param.put("data", list);
+		param.put("recordsTotal", total);
+		param.put("recordsFiltered", total);
+		return param;
+	}
+}

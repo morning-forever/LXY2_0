@@ -1,0 +1,30 @@
+package com.lx.service.app;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.lx.dao.DaoSupport;
+import com.lx.util.PageData;
+
+
+
+@Service
+@Transactional
+public class FormulaParamService {
+	
+	@Resource
+	private DaoSupport dao;
+	
+	
+	public PageData getFormulaParam() throws Exception{
+		return (PageData) dao.findForObject("FormulaParamMapper.getFormulaParam", null);
+	}
+	
+	
+	public void updateFormulaParam() throws Exception{
+		dao.update("FormulaParamMapper.updateFormulaParam", null);
+	}
+	
+}

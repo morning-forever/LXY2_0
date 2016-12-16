@@ -1,0 +1,724 @@
+@CHARSET "UTF-8"; 
+
+#route_table_report thead tr th,  #route_table_report tbody tr td{
+    text-align: center;
+}
+
+/*页面tab start */
+ .tabs input[type=radio] {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+}
+.tabs {
+  	width: 100%;
+  	float: none;
+  	list-style: none;
+  	position: relative;
+  	padding: 0;
+  	margin: 25px auto;
+}
+.tabs .tabs-li{
+  	float: left;
+}
+.tabs .tab-route {
+    display: block;
+    padding: 10px 20px;
+    border-radius: 2px 2px 0 0;
+    color: #08C;
+    font-size: 24px;
+    font-weight: normal;
+    font-family: 'Roboto', helveti;
+    background: rgba(255,255,255,0.2);
+    cursor: pointer;
+    position: relative;
+    top: 3px;
+    -webkit-transition: all 0.2s ease-in-out;
+    -moz-transition: all 0.2s ease-in-out;
+    -o-transition: all 0.2s ease-in-out;
+    transition: all 0.2s ease-in-out;
+}
+/*  .tabs .tab-route:hover {
+  background: rgba(255,255,255,0.5);
+  top: 0;
+}  */
+
+[id^=tab]:checked + label {
+  background: #08C;
+  color: white;
+  top: 0;
+}
+	      
+[id^=tab]:checked ~ [id^=tab-content] {
+    display: block;
+}
+.tab-content{
+  z-index: 2;
+  display: none;
+  text-align: left;
+  width: 100%;
+  font-size: 20px;
+  line-height: 140%;
+  padding-top: 10px;
+  background: #fff;
+  padding: 15px;
+  position: absolute;
+  top: 53px;
+  left: 0;
+  box-sizing: border-box;
+  -webkit-animation-duration: 0.5s;
+  -o-animation-duration: 0.5s;
+  -moz-animation-duration: 0.5s;
+  animation-duration: 0.5s;
+  overflow-x: hidden;
+}
+/*页面tab end */
+
+#day1{
+	font-size: 16px;
+	font-style: 微软雅黑;
+	width:50px;
+	font-weight: bold;
+}
+
+.top_time{
+	font-size:20px;
+}
+
+.iicon1{
+	background: url(../../img/glyphicons-halflings.png);
+	display: inline-block;
+	vertical-align: middle;
+}
+
+.row-fluid  input[type="button"] {
+    width: 100px;
+    margin: 5% 10%;
+    border: none;
+    background-color: #FC605A;
+    font-size: 1.6em;
+    color: #fff;
+    padding: 4% 0;
+    border-radius: 0.2em;
+    cursor: pointer;
+}
+
+.row-fluid .input-prepend{
+	padding-top: 8px;
+}
+
+
+.explain{
+	padding:20px 0;
+	position: relative;
+	height:32px;
+}
+
+.explain span{
+	font-size:15px;
+	margin-left: 35px;
+	line-height:32px;
+	color:#dbdbdb;
+}
+
+.iicon-add{
+	position: absolute;
+	background: url(../image/add_icon.png);
+	height:32px;	
+	width:32px;
+}
+
+.iicon-Del{
+	background: url(../image/del_icon.png);
+	
+	/* background-position: -25px -95px; */
+	height:32px;
+	width:32px;
+}
+.icon-addStroke{
+	background-position: 1px -95px;
+	height:20px;
+	width:20px;
+}
+
+#ress{
+	position: relative;
+	left:20%;
+}
+
+.route_name{
+	padding-top: 20px;
+}
+
+.route-manger-div{
+	border-bottom: 2px solid #b6b6b6;
+}
+
+.route-manger{
+	padding-top:20px;
+}
+
+.additional-wrap{
+	position: relative;
+	border-top: 1px dashed #dbdbdb;
+	font-size:15px;
+}
+
+.additional-wrap input[type=checkbox]+.lbl{
+    line-height: 20px;
+    min-height: 17px;
+    min-width: 17px;
+    font-weight: normal;
+    font-size:17px;
+    z-index:0;
+}
+
+.additional-wrap input[type=checkbox]+.lbl::before{
+	height: 17px;
+    line-height: 17px;
+    min-width: 17px;
+}
+
+.additional-wrap input[type=checkbox]+.lbl::before{
+	vertical-align: top;
+}
+
+.additional-wrap ul{
+	position: relative;
+	list-style: none outside none;
+	margin: 0 0 0 0;
+}
+
+.additional-wrap li {
+	position: relative;
+    height: 40px;
+    line-height: 40px;
+    display: list-item;
+    text-align: -webkit-match-parent;
+    padding-top:10px;
+}
+
+.additional-wrap li .desc{
+	position: absolute;
+	padding-left:25px;
+	top:25px;
+}
+
+.additional-wrap .price_left{
+	color:#fb9125;
+}
+
+.addr-d{
+	position: relative;
+	padding-bottom:50px;
+}
+
+.day{
+	font-size: 20px;
+	color:#438eb9;
+}
+
+.iicon-add{
+	/* position: absolute;
+	left:70px;
+	top: 2px; */
+}
+
+.address .left{
+	width:15%;
+}
+
+.address{
+	position: relative;
+	width:100%;
+	padding:25px;
+	padding-top:10px;
+}
+
+.address .right{
+	position: absolute;
+	left:15%;
+	top:2px;
+}
+
+.address .r-right{
+	position: absolute;
+	left:34%;
+	top: 2px;
+}
+
+.address .km_show{
+	position: absolute;
+	left:36%;
+	top:9px;
+}
+
+.price-wrap{
+	position: relative;
+	padding:20px 0;
+	font-size:20px;
+	margin:0 auto;
+}
+.price-wrap .agreement{
+	position: absolute;
+	left:175px;
+	font-size:15px;
+	top:25px;
+}
+
+.price-wrap .price_name {
+    vertical-align: middle;
+    padding-right: 10px;
+}
+
+.price-wrap .price {
+    font-size: 32px;
+    color: #f60;
+    line-height: 42px;
+    vertical-align: middle;
+    padding-right: 24px;
+    font-family: Tahoma, Simsun, sans-serif;
+}
+
+.price-wrap .btn_query .btn_query_disabled {
+    padding: 0 30px;
+    width: 72px;
+    white-space: nowrap;
+    height: 40px;
+    padding: 0 40px;
+    font: 18px/40px 'microsoft yahei',simsun,sans-serif;
+}
+
+.price-wrap .btn_query {
+	width:150px;
+	height:30px;
+    display: inline-block;
+    background-color: #fb9125;
+    background-image: -webkit-linear-gradient(top, #fb9125, #fa8721);
+    background-image: -moz-linear-gradient(top, #fb9125, #fa8721);
+    background-image: -ms-linear-gradient(top, #fb9125, #fa8721);
+    background-image: -o-linear-gradient(top, #fb9125, #fa8721);
+    background-image: linear-gradient(top, #fb9125, #fa8721);
+    color: #fff;
+    border-radius: 3px;
+    text-align: center;
+    border: 1px solid #e08821;
+    -webkit-box-shadow: inset 0 1px 0 0 #fcad5c;
+    box-shadow: inset 0 1px 0 0 #fcad5c;
+    line-height:30px;
+}
+
+.price-wrap:after {
+    clear: both;
+    content: '.';
+    display: block;
+    height: 0;
+    overflow: hidden;
+}
+
+.select_car{
+	position:relative;
+}
+
+/* .car_num {
+    width: 30px;
+    height: 26px;
+    display: inline-block;
+    border: 1px solid #ddd;
+    text-align: center;
+    margin-top:10px;
+}
+
+.del_num_btn, .add_num_btn {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    color: #333;
+    text-align: center;
+    cursor: pointer;
+    font-size: 20px;
+    border: 1px solid #ddd;
+    text-align: center;
+} */
+
+.btn-ok, .btn-ok:focus {
+    background-color: #428bca !important;
+    border-color: #428bca;
+    height: 26px;
+    line-height: 2px;
+}
+
+/*弹出窗 start*/
+.errorBlock{
+	padding: 5px  20px;
+}
+.dlg_wrap{
+	padding:10px 10px;
+	position:relative;
+}
+
+.dlg_select_time p{
+	font-size:20px;
+}
+
+.dlg_select_time{
+	padding-top:100px;
+}
+
+.dlg_select_time .field{
+	position:relative;
+	/* padding-bottom:10px; */
+	padding:30px 90px;
+}
+
+.dlg_select_time .input-prepend{
+	position:absolute;
+	padding-left:130px;
+	top:15px;
+}
+
+.dlg_select_car .st, .dlg_select_car .et, .dlg_confirm_car .st, .dlg_confirm_car .et{
+	font-size:20px;
+	float:left;
+	width:260px;
+}
+
+.dlg_select_car .car_info_table{
+	padding-top:30px;
+	position:relative;
+	font-size:20px;
+}
+
+.car_info_table table{
+	width:95%;
+}
+
+.car_info_table .carInfo{
+	border-top: 1px dashed #b6b6b6;
+}
+
+.car_info_table td{
+	padding-left:15px;
+}
+
+.dlg_confirm_car .dlg_title{
+	padding-bottom:15px;
+	font-size:20px;
+}
+
+.dlg_confirm_car .dlg_car_table{
+	width:96%;
+	padding-top:40px;
+	border-bottom: 1px dashed #b6b6b6;
+}
+
+.dlg_confirm_car .dlg_prompt{
+	color:#E24A4A;
+	font-size:15px;
+	padding-top:10px;
+}
+
+/*弹出窗 end*/
+
+.address_select_container, .address_select_container_finish{
+	width: 1000px;
+    background-color: #FFF;
+	background: #fff;
+	padding:15px 0;
+	position: relative;
+}
+
+ .address_select_container_ul {
+    width: 100%;
+    overflow: hidden;
+    list-style: none;
+    margin: 0 0 0 0;
+    font-size:15px;
+}
+
+ .address_select_container_ul .part {
+    overflow: hidden;
+    float: left;
+}
+
+ .part1{
+	width:250px;
+	padding-top: 20px;
+	white-space:nowrap;
+	overflow:hidden; 
+	text-overflow: ellipsis; 
+	-o-text-overflow:ellipsis; 
+}
+
+ .part2{
+	width:340px;
+	padding-top: 12px;
+}
+
+ .part3{
+	padding-top: 12px;
+	width:50px;
+}
+
+ .part4{
+	width:150px;
+	text-align: center;
+}
+
+.part4 .km_show{
+	font-size:8px;
+	color:red;
+}
+
+.order_wrap{
+	position: relative;
+	padding:10px;
+	font-size:20px;
+}
+
+.order_wrap .price_wrap{
+	width:95%;
+	border-bottom: 1px solid #b6b6b6;
+	margin-bottom:20px;
+}
+
+.order_wrap .price_name {
+    vertical-align: middle;
+    padding-right: 10px;
+}
+
+.order_wrap .km{
+    line-height: 42px;
+    vertical-align: middle;
+    padding-right: 24px;
+    font-family: Tahoma, Simsun, sans-serif;
+}
+
+.order_wrap .price {
+    font-size: 32px;
+    color: #f60;
+    line-height: 42px;
+    vertical-align: middle;
+    padding-right: 24px;
+    font-family: Tahoma, Simsun, sans-serif;
+}
+.order_wrap .pay_type{
+	width:95%;
+	border-top: 1px solid #b6b6b6;
+	margin-top:10px;
+	padding-top: 10px;
+}
+
+.errorBlock{
+	vertical-align: middle;
+	background-color:red;
+	text-align: center;
+	color:#fff;
+}
+
+/*退款界面 start*/
+.refund_wrapper .title{
+	font-size: 20px;
+	color:#438eb9;
+	padding:10px 0;
+	
+}
+
+.refund_wrapper #content{
+	width:280px;
+	height:100px;
+}
+
+/*退款界面 end*/
+
+/*订单详情start*/
+.order-detail-wrap{
+	width:800px;
+	padding:20px 20px;
+	position: relative;
+	border: 1px solid #b6b6b6;
+	margin:0 auto;
+}
+
+.order-detail-wrap .title{
+	color:#FC605A;
+	font-size: 20px;
+	text-align: center;
+}
+
+.order-detail-wrap .main{
+	position: relative;
+	border-top: 1px solid #b6b6b6;
+
+}
+
+.order_detail_style{
+	position: relative;
+	zoom:1;
+}
+
+.order_detail_style .numbering, .order_detail_style .where {
+    border-bottom: 1px dashed #ddd;
+    height: 40px;
+    line-height: 40px;
+    text-align: center;
+}
+
+.order_detail_style .where b{
+	font-size:20px;
+}
+
+.order_detail_style .numbering b {
+    color: #F60;
+    font-size: 18px;
+    margin-left: 5px;
+}
+
+.order_detail_style .normal_info ul{
+	margin: 0 0 10px 0px;
+    padding: 0;
+    list-style: none outside none;
+}
+
+.order_detail_style .normal_info ul li {
+    height: 40px;
+    line-height: 40px;
+    float: left;
+    margin-right: 20px;
+    display: list-item;
+}
+
+.order_detail_style .normal_info ul li .label_name {
+    font-size: 16px;
+    font-weight: bold;
+    float: left;
+    margin-right: 10px;
+    width: 120px;
+    text-align: right;
+    line-height: 40px;
+}
+
+.order_detail_style .normal_info ul li span {
+    float: left;
+    width: 230px;
+}
+
+.style{
+    border: 1px solid #ddd;
+    padding: 40px 20px;
+    position: relative;
+    margin-top: 40px;
+    padding-bottom: 10px;
+}
+
+.style .title_name{
+    position: absolute;
+    top: -20px;
+    font-size: 18px;
+    background-color: #ffffff;
+    padding: 10px 20px;
+    left: 10px;
+}
+
+.car_info .table{
+   table-layout: fixed;
+}
+
+.route_info .day_node, .route_info .route_info{
+	position: relative;
+}
+
+.route_info .route_detail{
+	position: absolute;
+	top: -10px;
+	left: 100px;
+}
+
+.day_list {
+    margin-bottom: 20px;
+    zoom: 1;
+}
+
+.day_content {
+    zoom: 1;
+    padding: 0 20px;
+    overflow: hidden;
+}
+
+.day_con_list li {
+    margin-bottom: -1px;
+    padding: 20px 0 6px 100px;
+    border-bottom: 1px solid #ccc;
+    zoom: 1;
+    overflow: hidden;
+}
+
+.day_con_list .time_list {
+    float: left;
+    margin-left: -100px;
+    display: inline;
+    font-weight: normal;
+    font-size: 20px;
+    width: 80px;
+    overflow: hidden;
+    color: #438eb9;
+}
+
+.day_con_list .day_detail {
+    padding: 0 0 10px 30px;
+    border-left: 1px dotted #ccc;
+    position: relative;
+    zoom: 1;
+    font: 14px/1.5 microsoft yahei, simsun, sans-serif;
+}
+
+.day_con_list .day_detail .bg_important {
+    margin-bottom: 5px;
+    padding: 0 5px;
+    line-height: 22px;
+    position: relative;
+    color: #666;
+    border: 1px solid #ddd;
+    display: inline-block;
+}
+
+/*订单详情 end*/
+
+/*默认路线 start*/
+.default-route-wrap{
+	width:90%;
+	padding:10px 20px;
+}
+
+.default-route-title{
+	font-size:18px;
+	border-bottom: 1px solid #ddd;
+}
+
+.default-route-title td{
+	padding:10px 10px;
+}
+
+.default-route-detail{
+	padding:10px 10px;
+	padding-bottom:0px;
+}
+
+.default-route-detail .day_node, .default-route-detail .address_select_container{
+	padding:5px 0px;
+	padding-bottom:20px;
+}
+
+.default-route-detail .part2{
+	padding-top:20px;
+}
+
+.default-route-wrap .default-route-price-wrap{
+	border-top: 1px solid #ddd;
+}
+
+.default-route-price-wrap .agreement{
+}
+
+
+/*默认路线   end*/
